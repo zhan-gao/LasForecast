@@ -69,5 +69,3 @@ adalasso <- function(x, y, lambda, lambda.lasso = NULL, gamma = 1, intercept = T
     return(list(ahat = ahat, bhat = bhat))
 
 }
-
-

@@ -13,7 +13,7 @@
 #' @export
 #'
 #' @examples
-#' lasso_weight(x,y)
+#' replasso(x,y, b.first,lambda)
 
 replasso <- function(x,
                      y,
