@@ -1,0 +1,19 @@
+Package: LasForecast
+Title: Time series forecasting with Lasso-type shrinkage methods in linear models
+Version: 0.0.0.9000
+Authors@R: c(
+    person("Zhan", "Gao", email = "zhangao@usc.edu", role = c("aut", "cre")),
+    person("Zhentao", "Shi", email = "zhentaoshi@cuhk.edu.hk", role = "aut"))
+Description: What the package does (one paragraph).
+Depends: R (>= 3.5.2)
+License: MIT
+Encoding: UTF-8
+LazyData: true
+depends:
+    glmnet
+Imports: 
+    Matrix,
+    CVXR,
+    caret,
+    Rmosek
+RoxygenNote: 6.1.1
