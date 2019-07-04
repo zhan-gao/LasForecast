@@ -137,3 +137,132 @@ train_lasso <- function(x,
     }
 
 }
+
+
+
+#' Do parameter tuning for replasso
+#'
+#' @param x Predictor matrix (n-by-p matrix)
+#' @param y Response variable
+#' @param b_first estimated slope from first step alasso
+#' @param gamma Parameter controlling the inverse of first step estimate. By default = 1.
+#' @param intercept A boolean: include an intercept term or not
+#' @param scalex A boolean: standardize the design matrix or not
+#' @param lambda_seq Candidate sequnece of parameters. If NULL, the function generates the sequnce.
+#' @param train_method "timeslice" or "cv"
+#' @param nlambda # of lambdas
+#' @param lambda_min_ratio # lambda_min_ratio * lambda_max = lambda_min
+#' @param k k-fold cv if "cv" is chosen
+#' @param solver "CVXR" or "Rmosek"
+#'
+#' @return bestTune
+#'
+#' @export
+#'
+#' @examples
+#' train_replasso(x,y)
+train_replasso <- function(x,
+                           y,
+                           b_first,
+                           gamma = 1,
+                           intercept = TRUE,
+                           scalex = FALSE,
+                           lambda_seq = NULL,
+                           nlambda = 100,
+                           lambda_min_ratio = 0.0001,
+                           k = 10,
+                           solver = "CVXR"){
+
+    n <- nrow(x)
+    p <- ncol(x)
+
+    selected <- (b_first != 0)
+    p_selected <- sum(selected)
+    xx <- as.matrix(x[, selected])
+
+    if(p_selected == 0){
+        warning("Already screened all predictors out in the first step. A random number returned.")
+        return(rnorm(1))
+    } else if ( p_selected > 1){
+        best_tune <- train_lasso(xx,
+                                 y,
+                                 ada = TRUE,
+                                 gamma = gamma,
+                                 intercept = intercept,
+                                 scalex = scalex,
+                                 lambda_seq = lambda_seq,
+                                 train_method = "cv",
+                                 nlambda = nlambda,
+                                 lambda_min_ratio = lambda_min_ratio,
+                                 k = k)
+        return(best_tune)
+
+    } else {
+
+        w <- init_est(xx, y, gamma = gamma, intercept = intercept, scalex = scalex)
+
+        if(is.null(lambda_seq)){
+
+            lambda_max_lasso <- abs(sum(xx * y)) / n
+            if(intercept) coef_max = max( abs( lsfit(xx, y)$coefficients[-1] ) )
+            else coef_max = max(abs( lsfit(xx, y, intercept = intercept) ))
+            lambda_max <- coef_max * lambda_max_lasso
+            lambda_seq <- get_lambda_seq(lambda_max, lambda_min_ratio = lambda_min_ratio, nlambda = nlambda)
+
+        }
+
+
+        seq_interval = split(1:n, ceiling(seq_along(1:n)/(n/k)))
+        MSE = rep(0, length(lambda_seq))
+
+        for(i in 1:length(lambda_seq)){
+
+            lambda = lambda_seq[i]
+
+            print(i)
+
+            for(j in 1:k){
+
+                y.j = y[-seq_interval[[j]]]
+                X.j = xx[-seq_interval[[j]], ]
+
+                yp = matrix(y[seq_interval[[j]]], length(seq_interval[[j]]), 1)
+                Xp = xx[seq_interval[[j]], ]
+
+                result = lasso_weight(as.matrix(X.j),
+                                      y.j,
+                                      lambda = lambda,
+                                      w = w,
+                                      intercept = intercept,
+                                      scalex = scalex,
+                                      solver = solver)
+
+                a_ada = as.numeric(result$ahat)
+                b_ada = as.numeric(result$bhat)
+
+                if(intercept){
+                    coef_ada = c(a_ada, b_ada)
+                    mse_j = colMeans( (yp - cbind(1, Xp) %*% coef_ada)^2 )
+                }
+                else{
+                    coef_ada = b_ada
+                    mse_j = mean( (yp - as.matrix(Xp) * coef_ada)^2 )
+                }
+
+                MSE[i] = MSE[i] + mse_j
+
+            }
+
+        }
+
+        ind_sel = which.min(MSE)
+        lambda = lambda_seq[ind_sel]
+        return(lambda)
+    }
+
+}
+
+
+
+
+

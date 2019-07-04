@@ -40,7 +40,6 @@ adalasso <- function(x, y, lambda, lambda_lasso = NULL, gamma = 1, intercept = T
 
 init_est <- function(x, y, lambda_lasso = NULL, gamma = 1, intercept = TRUE, scalex = FALSE){
 
-
     n <- nrow(x)
     p <- ncol(x)
 

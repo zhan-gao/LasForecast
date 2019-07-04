@@ -54,7 +54,7 @@ replasso <- function(x,
         ahat.second <- as.numeric(result$a)
         bhat.second <- as.numeric(result$b)
     } else {
-        result <- glmnet(as.matrix(xx), y, lambda = lambda * sum(w)/p,
+        result <- glmnet(as.matrix(xx), y, lambda = lambda * sum(w) / p,
                          penalty.factor = w, intercept = intercept, standardize = scalex)
         ahat.second <- as.numeric(result$a0)
         bhat.second <- as.numeric(result$beta)

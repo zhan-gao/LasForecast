@@ -18,6 +18,8 @@ lasso_weight(x, y, lambda, w = NULL, intercept = TRUE,
 
 \item{intercept}{A boolean: include an intercept term or not}
 
+\item{scalex}{A boolean: standardize the design matrix or not}
+
 \item{solver}{indicate solver in use, c("CVXR", "MOSEK")}
 }
 \value{

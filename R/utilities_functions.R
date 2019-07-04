@@ -38,7 +38,7 @@ get_lasso_lambda_max <- function(x, y, scalex = FALSE, nlambda = 100, lambda_min
     if (scalex) {
         sx <- scale(x, scale = apply(x, 2, sd_n))
         sx <- as.matrix(sx, ncol = p, nrow = n)
-        # sy <- as.vector(scale(y, scale = sd_n(y)))
+
         lambda_max <- max(abs(colSums(sx * y))) / n
     } else {
         lambda_max <- max(abs(colSums(x * y))) / n

@@ -7,7 +7,7 @@
 #' @param lambda Shrinkage tuning parameter
 #' @param w weights
 #' @param intercept A boolean: include an intercept term or not
-#' @param scalex
+#' @param scalex A boolean: standardize the design matrix or not
 #' @param solver indicate solver in use, c("CVXR", "MOSEK")
 #'
 #' @return A list contains estimated intercept and slope
@@ -36,7 +36,7 @@ lasso_weight <- function(x,
     if(solver == "CVXR"){
 
         if (intercept) {
-            beta <- Variable(p + 1)
+            beta <- CVXR::Variable(p + 1)
             xx <- cbind(1, x)
             if(is.null(w)){
                 pen <- CVXR::p_norm(beta[-1], 1)
@@ -44,7 +44,7 @@ lasso_weight <- function(x,
                 pen <- CVXR::sum_entries(abs(beta[-1] * w))
             }
         } else {
-            beta <- Variable(p)
+            beta <- CVXR::Variable(p)
             xx <- x
             if(is.null(w)){
                 pen <- CVXR::p_norm(beta, 1)
@@ -54,7 +54,7 @@ lasso_weight <- function(x,
         }
 
         obj <- CVXR::sum_squares(y - xx %*% beta) / (2 * n) + lambda * pen
-        prob <- CVXR::Problem(Minimize(obj))
+        prob <- CVXR::Problem(CVXR::Minimize(obj))
         result <- solve(prob, FEASTOL = rtol, RELTOL = rtol, ABSTOL = rtol)
 
         if (intercept) {
@@ -83,7 +83,7 @@ lasso_weight <- function(x,
                 P$c <- c(rep(lambda, 2 * p), rep(0, n), 1/(2*n), 0, 0, 0)
             }
 
-            A <- as.matrix.csr(x)
+            A <- SparseM::as.matrix.csr(x)
             A <- cbind(
                 A, -A,
                 as(n, "matrix.diag.csr"),
@@ -93,8 +93,8 @@ lasso_weight <- function(x,
             A <-rbind(A,
                       cbind(
                           SparseM::as.matrix.csr(0, 2, 2 * p + n),
-                          as.matrix.csr(c(-0.5,-0.5, 1, 0, 0, 1), 2, 3),
-                          as.matrix.csr(0, 2, 1)
+                          SparseM::as.matrix.csr(c(-0.5,-0.5, 1, 0, 0, 1), 2, 3),
+                          SparseM::as.matrix.csr(0, 2, 1)
                       ))
 
             P$A <- as(A, "CsparseMatrix")
