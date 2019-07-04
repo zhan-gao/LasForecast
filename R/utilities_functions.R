@@ -19,6 +19,12 @@ foldid_vec = function(TT, k) {
     return(id)
 }
 
+# ---- Generate lambda Sequence as in glmnet ----
+# Details refer to Friedman, Hastie and Tibshirani (2010, Sec. 2.5.) Journal of Statistical Software
+# and the online posts:
+# https://stackoverflow.com/questions/23686067/default-lambda-sequence-in-glmnet-for-cross-validation
+# https://stackoverflow.com/questions/25257780/how-does-glmnet-compute-the-maximal-lambda-value/
+
 sd_n <- function(x){
     sqrt(sum((x - mean(x))^2)/length(x))
 }
@@ -27,6 +33,7 @@ get_lasso_lambda_max <- function(x, y, scalex = FALSE, nlambda = 100, lambda_min
 
     n <- nrow(x)
     p <- ncol(x)
+    y <- as.numeric(y)
 
     if (scalex) {
         sx <- scale(x, scale = apply(x, 2, sd_n))
