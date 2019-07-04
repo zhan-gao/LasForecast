@@ -4,7 +4,7 @@
 \alias{adalasso}
 \title{Implement Adaptive Lasso via glmnet}
 \usage{
-adalasso(x, y, lambda, lambda.lasso = NULL, gamma = 1,
+adalasso(x, y, lambda, lambda_lasso = NULL, gamma = 1,
   intercept = TRUE, scalex = FALSE)
 }
 \arguments{
@@ -14,13 +14,13 @@ adalasso(x, y, lambda, lambda.lasso = NULL, gamma = 1,
 
 \item{lambda}{Shrinkage tuning parameter for the adaptive step}
 
+\item{lambda_lasso}{Shrinkage tuning parater for the initial step Lasso estimation (If applicable)}
+
 \item{gamma}{Parameter controlling the inverse of first step estimate}
 
 \item{intercept}{A boolean: include an intercept term or not}
 
 \item{scalex}{A boolean: standardize the design matrix or not}
-
-\item{lambda_lasso}{Shrinkage tuning parater for the initial step Lasso estimation (If applicable)}
 }
 \value{
 A list contains estimated intercept and slope

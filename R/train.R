@@ -1,3 +1,26 @@
+#' Do parameter tuning for Lasso and Adaptive lasso
+#'
+#' @param x Predictor matrix (n-by-p matrix)
+#' @param y Response variable
+#' @param ada A boolean: Do parameter tuning for adaptive Lasso if TRUE (Default) For Lasso if FALSE.
+#' @param gamma Parameter controlling the inverse of first step estimate. By default = 1.
+#' @param intercept A boolean: include an intercept term or not
+#' @param scalex A boolean: standardize the design matrix or not
+#' @param lambda_seq Candidate sequnece of parameters. If NULL, the function generates the sequnce.
+#' @param train_method "timeslice" or "cv"
+#' @param nlambda # of lambdas
+#' @param lambda_min_ratio # lambda_min_ratio * lambda_max = lambda_min
+#' @param k k-fold cv if "cv" is chosen
+#' @param initial_window control "timeslice"
+#' @param horizon control "timeslice"
+#' @param fixed_window control "timeslice"
+#'
+#' @return bestTune
+#'
+#' @export
+#'
+#' @examples
+#' train_lasso(x,y)
 train_lasso <- function(x,
                         y,
                         ada = TRUE,

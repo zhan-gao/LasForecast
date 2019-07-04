@@ -2,4 +2,6 @@
 
 export(adalasso)
 export(lasso_weight)
+export(post_lasso)
 export(replasso)
+export(train_lasso)

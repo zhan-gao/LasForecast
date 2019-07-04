@@ -31,5 +31,5 @@ A list contains estimated intercept and slope
 Estimation function. Tuning parameter inputs needed. First step adalasso estimate needed.\cr
 }
 \examples{
-lasso_weight(x,y)
+replasso(x,y, b.first,lambda)
 }
