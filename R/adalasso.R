@@ -20,52 +20,61 @@
 #' @examples
 #' adalasso(x,y)
 
-adalasso <- function(x, y, lambda, lambda.lasso = NULL, gamma = 1, intercept = TRUE,
+adalasso <- function(x, y, lambda, lambda_lasso = NULL, gamma = 1, intercept = TRUE,
     scalex = FALSE) {
 
-    n = nrow(x)
-    p = ncol(x)
+    n <- nrow(x)
+    p <- ncol(x)
 
-    if (p > n) {
-
-        # The high-dimensional case: use Lasso as initial estimator
-
-        lasso.result <- glmnet::glmnet(
-            x,
-            y,
-            lambda = lambda.lasso,
-            intercept = intercept,
-            standardize = scalex
-        )
-
-        b.temp<- as.numeric(lasso.result$beta)
-        b.temp[b.temp == 0] <- 1e-08
-
-        if (intercept)
-            coef.lasso <- c(as.numeric(lasso.result$a0), as.numeric(lasso.result$beta))
-        else
-            coef.lasso <- as.numeric(lasso.result$beta)
-
-    } else {
-
-        # The low-dimensional case: use OLS as initial estimator
-
-        coef.ols <- lsfit(x, y, intercept = intercept)$coef
-
-        if (intercept)
-            b.temp <- coef.ols[-1]
-        else
-            b.temp <- coef.ols
-    }
-
-    w <- 1/(abs(b.temp)^gamma)
+    w <- init_est(x, y, lambda_lasso, gamma, intercept, scalex)
 
     # Adaptive Lasso estimation
-    result <- glmnet::glmnet(x, y, lambda = lambda * sum(w)/p, penalty.factor = w,
-                    intercept = intercept, standardize = scalex)
+    result <- glmnet::glmnet(x, y, lambda = lambda * sum(w) / p, penalty.factor = w,
+                             intercept = intercept, standardize = scalex)
     ahat <- as.numeric(result$a0)
     bhat <- as.numeric(result$beta)
 
     return(list(ahat = ahat, bhat = bhat))
 
+}
+
+init_est <- function(x, y, lambda_lasso = NULL, gamma = 1, intercept = TRUE, scalex = FALSE){
+
+
+    n <- nrow(x)
+    p <- ncol(x)
+
+    if (p > n) {
+
+        # The high-dimensional case: use Lasso as initial estimator
+
+        lasso_result <- glmnet::glmnet(x,
+                                       y,
+                                       lambda = lambda_lasso,
+                                       intercept = intercept,
+                                       standardize = scalex)
+
+        b_temp <- as.numeric(lasso_result$beta)
+        b_temp[b_temp == 0] <- 1e-08
+
+        if (intercept)
+            coef.lasso <- c(as.numeric(lasso_result$a0), as.numeric(lasso_result$beta))
+        else
+            coef.lasso <- as.numeric(lasso_result$beta)
+
+    } else {
+
+        # The low-dimensional case: use OLS as initial estimator
+
+        coef_ols <- lsfit(x, y, intercept = intercept)$coef
+
+        if (intercept)
+            b_temp <- coef_ols[-1]
+        else
+            b_temp <- coef_ols
+    }
+
+    w <- 1/(abs(b_temp)^gamma)
+
+    return(w)
 }
