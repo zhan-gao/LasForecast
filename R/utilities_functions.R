@@ -55,3 +55,9 @@ get_lambda_seq <- function(lambda_max, lambda_min_ratio = 0.0001, nlambda = 100)
 
     return(lambda_seq)
 }
+
+
+pos <- function(x){
+    if(x > 0) x
+    else 0
+}

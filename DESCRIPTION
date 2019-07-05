@@ -17,8 +17,9 @@ depends:
     foreach
 Imports: 
     caret,
+    Matrix
+Suggests:
     CVXR,
-    Matrix,
     Rmosek,
     SparseM
 RoxygenNote: 6.1.1

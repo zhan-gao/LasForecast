@@ -1,4 +1,4 @@
-#' Implement weighted Lasso estimation (second step of adaptive lasso)
+#' Implement weighted Lasso estimation (second step of adaptive lasso) via optimization solver
 #'
 #' Estimation function. Tuning parameter inputs needed.\cr
 #'
@@ -17,21 +17,21 @@
 #' @export
 #'
 #' @examples
-#' lasso_weight(x,y)
-lasso_weight <- function(x,
-                         y,
-                         lambda,
-                         w = NULL,
-                         intercept = TRUE,
-                         scalex = FALSE,
-                         solver = "CVXR",
-                         rtol = 1e-8,
-                         verb = 0) {
+#' lasso_weight_opt(x,y)
+lasso_weight_opt <- function(x,
+                             y,
+                             lambda,
+                             w = NULL,
+                             intercept = TRUE,
+                             scalex = FALSE,
+                             solver = "CVXR",
+                             rtol = 1e-8,
+                             verb = 0) {
 
     n <- nrow(x)
     p <- ncol(x)
 
-    if(scalex) x = scale(x, center = FALSE, scale = apply(x, 2, sd) )
+    if(scalex) x <- scale(x, center = FALSE, scale = apply(x, 2, sd) )
 
     if(solver == "CVXR"){
 
@@ -137,3 +137,41 @@ lasso_weight <- function(x,
     return(list(ahat = ahat, bhat = bhat))
 
 }
+
+#' Implement weighted Lasso estimation (second step of adaptive lasso) via coordinate descent
+#' for the case in which only one predictor remains
+#'
+#' Estimation function. Tuning parameter inputs needed.\cr
+#'
+#' @param x Predictor matrix (n-by-p matrix)
+#' @param y Response variable
+#' @param lambda Shrinkage tuning parameter
+#' @param w weights
+#' @param intercept A boolean: include an intercept term or not
+#' @param scalex A boolean: standardize the design matrix or not
+#'
+#' @return A list contains estimated intercept and slope
+#' \item{ahat}{Estimated intercept}
+#' \item{bhat}{Estimated slope}
+lasso_weight_single <- function(x,
+                                y,
+                                lambda,
+                                w = NULL,
+                                intercept = TRUE,
+                                scalex = FALSE) {
+
+    if(scalex) x <- x / sd(x)
+    if(is.null(w)) w = 1
+
+    if(intercept) b_ols <- lsfit(x,y)$coefficients[-1]
+    else b_ols <- lsfit(x,y,intercept = intercept)$coefficients
+
+    bhat <- sign(b_ols) * pos(abs(b_ols) - lambda * w)
+    if (intercept) ahat <- mean(y - x*bhat)
+    else ahat = NULL
+
+
+    return(list(ahat = ahat, bhat = bhat))
+
+}
+

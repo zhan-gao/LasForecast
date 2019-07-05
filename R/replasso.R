@@ -4,7 +4,7 @@
 #'
 #' @param b.first First step adaptive lasso estimates
 #' @param gamma Parameter controlling the inverse of first step estimate
-#' @inheritParams lasso_weight
+#' @inheritParams lasso_weight_single
 #'
 #' @return A list contains estimated intercept and slope
 #' \item{ahat}{Estimated intercept}
@@ -21,8 +21,7 @@ replasso <- function(x,
                      lambda,
                      gamma = 1,
                      intercept = TRUE,
-                     scalex = FALSE,
-                     solver = "CVXR") {
+                     scalex = FALSE) {
 
     p <- ncol(x)
 
@@ -44,13 +43,9 @@ replasso <- function(x,
 
     # Second Adaptive Lasso estimation
 
-    # if (is.null(lambda)) {
-    #     lambda = CV.replasso(as.matrix(xx), y, b.ols.second, w)
-    # }
-
     if (sum(b.first != 0) == 1) {
-        result <- lasso.weight(as.matrix(xx), y, lambda = lambda,
-                               w = w, intercept = intercept, scalex = scalex, solver = solver)
+        result <- lasso_weight_single(xx, y, lambda = lambda,
+                                      w = w, intercept = intercept, scalex = scalex)
         ahat.second <- as.numeric(result$a)
         bhat.second <- as.numeric(result$b)
     } else {

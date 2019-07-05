@@ -153,7 +153,6 @@ train_lasso <- function(x,
 #' @param nlambda # of lambdas
 #' @param lambda_min_ratio # lambda_min_ratio * lambda_max = lambda_min
 #' @param k k-fold cv if "cv" is chosen
-#' @param solver "CVXR" or "Rmosek"
 #'
 #' @return bestTune
 #'
@@ -170,8 +169,7 @@ train_replasso <- function(x,
                            lambda_seq = NULL,
                            nlambda = 100,
                            lambda_min_ratio = 0.0001,
-                           k = 10,
-                           solver = "CVXR"){
+                           k = 10){
 
     n <- nrow(x)
     p <- ncol(x)
@@ -219,8 +217,6 @@ train_replasso <- function(x,
 
             lambda = lambda_seq[i]
 
-            print(i)
-
             for(j in 1:k){
 
                 y.j = y[-seq_interval[[j]]]
@@ -229,13 +225,12 @@ train_replasso <- function(x,
                 yp = matrix(y[seq_interval[[j]]], length(seq_interval[[j]]), 1)
                 Xp = xx[seq_interval[[j]], ]
 
-                result = lasso_weight(as.matrix(X.j),
-                                      y.j,
-                                      lambda = lambda,
-                                      w = w,
-                                      intercept = intercept,
-                                      scalex = scalex,
-                                      solver = solver)
+                result = lasso_weight_single(X.j,
+                                             y.j,
+                                             lambda = lambda,
+                                             w = w,
+                                             intercept = intercept,
+                                             scalex = scalex)
 
                 a_ada = as.numeric(result$ahat)
                 b_ada = as.numeric(result$bhat)

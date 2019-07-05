@@ -6,7 +6,7 @@
 \usage{
 train_replasso(x, y, b_first, gamma = 1, intercept = TRUE,
   scalex = FALSE, lambda_seq = NULL, nlambda = 100,
-  lambda_min_ratio = 1e-04, k = 10, solver = "CVXR")
+  lambda_min_ratio = 1e-04, k = 10)
 }
 \arguments{
 \item{x}{Predictor matrix (n-by-p matrix)}
@@ -28,8 +28,6 @@ train_replasso(x, y, b_first, gamma = 1, intercept = TRUE,
 \item{lambda_min_ratio}{# lambda_min_ratio * lambda_max = lambda_min}
 
 \item{k}{k-fold cv if "cv" is chosen}
-
-\item{solver}{"CVXR" or "Rmosek"}
 
 \item{train_method}{"timeslice" or "cv"}
 }

@@ -5,7 +5,7 @@
 \title{Implement repeated Lasso estimation}
 \usage{
 replasso(x, y, b.first, lambda, gamma = 1, intercept = TRUE,
-  scalex = FALSE, solver = "CVXR")
+  scalex = FALSE)
 }
 \arguments{
 \item{x}{Predictor matrix (n-by-p matrix)}
@@ -21,8 +21,6 @@ replasso(x, y, b.first, lambda, gamma = 1, intercept = TRUE,
 \item{intercept}{A boolean: include an intercept term or not}
 
 \item{scalex}{A boolean: standardize the design matrix or not}
-
-\item{solver}{indicate solver in use, c("CVXR", "MOSEK")}
 }
 \value{
 A list contains estimated intercept and slope
