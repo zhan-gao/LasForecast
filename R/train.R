@@ -1,3 +1,4 @@
+# ----
 #' Do parameter tuning for Lasso and Adaptive lasso
 #'
 #' @param x Predictor matrix (n-by-p matrix)
@@ -34,7 +35,7 @@ train_lasso <- function(x,
                         k = 10,
                         initial_window = ceiling(nrow(x)*0.7),
                         horizon = 1,
-                        fixed_window = FALSE) {
+                        fixed_window = TRUE) {
     n <- nrow(x)
     p <- ncol(x)
 
@@ -47,8 +48,8 @@ train_lasso <- function(x,
                                                  lambda_min_ratio = lambda_min_ratio)
 
         if(ada){
-            if(intercept) coef_max = max( abs( lsfit(x, y)$coefficients[-1] ) )
-            else coef_max = max(abs( lsfit(x, y, intercept = intercept) ))
+            if(intercept) coef_max <- max( abs( lsfit(x, y)$coefficients[-1] ) )
+            else coef_max <- max(abs( lsfit(x, y, intercept = intercept) ))
             lambda_max <- coef_max * lambda_max_lasso
         } else {
             lambda_max <- lambda_max_lasso
@@ -138,9 +139,14 @@ train_lasso <- function(x,
 
 }
 
-
+# -----
 
 #' Do parameter tuning for replasso
+#'
+#' If all variables are killed in the first step: return a random number\cr
+#' If more than 1 variables are left: just repeat the training process for alasso\cr
+#' If only 1 variable remained: use a brute-force process do the cross-validation.\cr
+#' FOR FUTURE WORK: INCORPORATE REPLASSO INTO CARET FRAMEWORK.
 #'
 #' @param x Predictor matrix (n-by-p matrix)
 #' @param y Response variable
@@ -148,11 +154,15 @@ train_lasso <- function(x,
 #' @param gamma Parameter controlling the inverse of first step estimate. By default = 1.
 #' @param intercept A boolean: include an intercept term or not
 #' @param scalex A boolean: standardize the design matrix or not
+#' @param train_method "timeslice" or "cv"
 #' @param lambda_seq Candidate sequnece of parameters. If NULL, the function generates the sequnce.
 #' @param train_method "timeslice" or "cv"
 #' @param nlambda # of lambdas
 #' @param lambda_min_ratio # lambda_min_ratio * lambda_max = lambda_min
 #' @param k k-fold cv if "cv" is chosen
+#' @param initial_window control "timeslice"
+#' @param horizon control "timeslice"
+#' @param fixed_window control "timeslice"
 #'
 #' @return bestTune
 #'
@@ -166,10 +176,14 @@ train_replasso <- function(x,
                            gamma = 1,
                            intercept = TRUE,
                            scalex = FALSE,
+                           train_method = "timeslice",
                            lambda_seq = NULL,
                            nlambda = 100,
                            lambda_min_ratio = 0.0001,
-                           k = 10){
+                           k = 10,
+                           initial_window = ceiling(nrow(x)*0.7),
+                           horizon = 1,
+                           fixed_window = TRUE){
 
     n <- nrow(x)
     p <- ncol(x)
@@ -177,6 +191,7 @@ train_replasso <- function(x,
     selected <- (b_first != 0)
     p_selected <- sum(selected)
     xx <- as.matrix(x[, selected])
+
 
     if(p_selected == 0){
         warning("Already screened all predictors out in the first step. A random number returned.")
@@ -189,10 +204,13 @@ train_replasso <- function(x,
                                  intercept = intercept,
                                  scalex = scalex,
                                  lambda_seq = lambda_seq,
-                                 train_method = "cv",
+                                 train_method = train_method,
                                  nlambda = nlambda,
                                  lambda_min_ratio = lambda_min_ratio,
-                                 k = k)
+                                 k = k,
+                                 initial_window = initial_window,
+                                 horizon = horizon,
+                                 fixed_window = fixed_window)
         return(best_tune)
 
     } else {
@@ -202,31 +220,52 @@ train_replasso <- function(x,
         if(is.null(lambda_seq)){
 
             lambda_max_lasso <- abs(sum(xx * y)) / n
-            if(intercept) coef_max = max( abs( lsfit(xx, y)$coefficients[-1] ) )
-            else coef_max = max(abs( lsfit(xx, y, intercept = intercept) ))
+            if(intercept) coef_max <- max( abs( lsfit(xx, y)$coefficients[-1] ) )
+            else coef_max <- max(abs( lsfit(xx, y, intercept = intercept) ))
             lambda_max <- coef_max * lambda_max_lasso
             lambda_seq <- get_lambda_seq(lambda_max, lambda_min_ratio = lambda_min_ratio, nlambda = nlambda)
 
         }
 
-
-        seq_interval = split(1:n, ceiling(seq_along(1:n)/(n/k)))
         MSE = rep(0, length(lambda_seq))
+
+        if (train_method == "cv"){
+
+            data_split <- list(train = list(), test = list())
+            ind_seq <- 1:n
+            seq_interval = split(ind_seq, ceiling(seq_along(1:n)/(n/k)))
+
+
+            for(j in 1:k){
+                data_split$train[[j]] <-  ind_seq[-seq_interval[[j]]]
+                data_split$test[[j]] <- ind_seq[seq_interval[[j]]]
+            }
+
+        } else if (train_method == "timeslice") {
+
+            data_split <- caret::createTimeSlices(y,
+                                                  initialWindow = initial_window,
+                                                  horizon = horizon,
+                                                  fixedWindow = fixed_window)
+        } else {
+            stop("Invalid train_method input. Choose between timeslice and cv.")
+            NULL
+        }
 
         for(i in 1:length(lambda_seq)){
 
             lambda = lambda_seq[i]
 
-            for(j in 1:k){
+            for(j in 1:length(data_split$train)){
 
-                y.j = y[-seq_interval[[j]]]
-                X.j = xx[-seq_interval[[j]], ]
+                y_j <- y[data_split$train[[j]]]
+                x_j <- xx[data_split$train[[j]], ]
 
-                yp = matrix(y[seq_interval[[j]]], length(seq_interval[[j]]), 1)
-                Xp = xx[seq_interval[[j]], ]
+                y_p <- as.matrix(y[data_split$test[[j]]])
+                X_p <- xx[data_split$test[[j]], ]
 
-                result = lasso_weight_single(X.j,
-                                             y.j,
+                result = lasso_weight_single(X_j,
+                                             y_j,
                                              lambda = lambda,
                                              w = w,
                                              intercept = intercept,
@@ -237,11 +276,11 @@ train_replasso <- function(x,
 
                 if(intercept){
                     coef_ada = c(a_ada, b_ada)
-                    mse_j = colMeans( (yp - cbind(1, Xp) %*% coef_ada)^2 )
+                    mse_j = colMeans( (y_p - cbind(1, X_p) %*% coef_ada)^2 )
                 }
                 else{
                     coef_ada = b_ada
-                    mse_j = mean( (yp - as.matrix(Xp) * coef_ada)^2 )
+                    mse_j = mean( (y_p - as.matrix(X_p) * coef_ada)^2 )
                 }
 
                 MSE[i] = MSE[i] + mse_j
