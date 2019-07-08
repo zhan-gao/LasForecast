@@ -227,8 +227,6 @@ train_replasso <- function(x,
 
         }
 
-        MSE = rep(0, length(lambda_seq))
-
         if (train_method == "cv"){
 
             data_split <- list(train = list(), test = list())
@@ -252,19 +250,22 @@ train_replasso <- function(x,
             NULL
         }
 
+        MSE = rep(0, length(lambda_seq))
+
         for(i in 1:length(lambda_seq)){
 
             lambda = lambda_seq[i]
 
             for(j in 1:length(data_split$train)){
 
+
                 y_j <- y[data_split$train[[j]]]
                 x_j <- xx[data_split$train[[j]], ]
 
                 y_p <- as.matrix(y[data_split$test[[j]]])
-                X_p <- xx[data_split$test[[j]], ]
+                x_p <- xx[data_split$test[[j]], ]
 
-                result = lasso_weight_single(X_j,
+                result = lasso_weight_single(x_j,
                                              y_j,
                                              lambda = lambda,
                                              w = w,
@@ -276,27 +277,23 @@ train_replasso <- function(x,
 
                 if(intercept){
                     coef_ada = c(a_ada, b_ada)
-                    mse_j = colMeans( (y_p - cbind(1, X_p) %*% coef_ada)^2 )
+                    mse_j = colMeans( (y_p - cbind(1, x_p) %*% coef_ada)^2 )
                 }
                 else{
                     coef_ada = b_ada
-                    mse_j = mean( (y_p - as.matrix(X_p) * coef_ada)^2 )
+                    mse_j = mean( (y_p - as.matrix(x_p) * coef_ada)^2 )
                 }
 
                 MSE[i] = MSE[i] + mse_j
-
             }
 
         }
+
 
         ind_sel = which.min(MSE)
         lambda = lambda_seq[ind_sel]
         return(lambda)
     }
 
+
 }
-
-
-
-
-

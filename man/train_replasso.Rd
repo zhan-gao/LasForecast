@@ -5,8 +5,10 @@
 \title{Do parameter tuning for replasso}
 \usage{
 train_replasso(x, y, b_first, gamma = 1, intercept = TRUE,
-  scalex = FALSE, lambda_seq = NULL, nlambda = 100,
-  lambda_min_ratio = 1e-04, k = 10)
+  scalex = FALSE, train_method = "timeslice", lambda_seq = NULL,
+  nlambda = 100, lambda_min_ratio = 1e-04, k = 10,
+  initial_window = ceiling(nrow(x) * 0.7), horizon = 1,
+  fixed_window = TRUE)
 }
 \arguments{
 \item{x}{Predictor matrix (n-by-p matrix)}
@@ -21,6 +23,8 @@ train_replasso(x, y, b_first, gamma = 1, intercept = TRUE,
 
 \item{scalex}{A boolean: standardize the design matrix or not}
 
+\item{train_method}{"timeslice" or "cv"}
+
 \item{lambda_seq}{Candidate sequnece of parameters. If NULL, the function generates the sequnce.}
 
 \item{nlambda}{# of lambdas}
@@ -29,13 +33,22 @@ train_replasso(x, y, b_first, gamma = 1, intercept = TRUE,
 
 \item{k}{k-fold cv if "cv" is chosen}
 
+\item{initial_window}{control "timeslice"}
+
+\item{horizon}{control "timeslice"}
+
+\item{fixed_window}{control "timeslice"}
+
 \item{train_method}{"timeslice" or "cv"}
 }
 \value{
 bestTune
 }
 \description{
-Do parameter tuning for replasso
+If all variables are killed in the first step: return a random number\cr
+If more than 1 variables are left: just repeat the training process for alasso\cr
+If only 1 variable remained: use a brute-force process do the cross-validation.\cr
+FOR FUTURE WORK: INCORPORATE REPLASSO INTO CARET FRAMEWORK.
 }
 \examples{
 train_replasso(x,y)
