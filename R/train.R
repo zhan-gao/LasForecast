@@ -8,7 +8,7 @@
 #' @param intercept A boolean: include an intercept term or not
 #' @param scalex A boolean: standardize the design matrix or not
 #' @param lambda_seq Candidate sequnece of parameters. If NULL, the function generates the sequnce.
-#' @param train_method "timeslice" or "cv"
+#' @param train_method "timeslice", "cv", "aic", "bic", "aicc", "hqc"
 #' @param nlambda # of lambdas
 #' @param lambda_min_ratio # lambda_min_ratio * lambda_max = lambda_min
 #' @param k k-fold cv if "cv" is chosen
@@ -90,7 +90,51 @@ train_lasso <- function(x,
             return(lambda_cv)
         }
 
-    } else if (train_method == "timeslice") {
+    } else if (train_method %in% c("aic", "bic", "aicc", "hqc")){
+
+        glmnet_args <- list(x = x,
+                            y = y,
+                            lambda = lambda_seq,
+                            intercept = intercept,
+                            standardize = scalex)
+
+        if (ada){
+            glmnet_args$penalty.factor = w
+            glmnet_args$lambda <- lambda_seq * sum(w) / p
+        }
+
+        glm_est <- do.call(glmnet::glmnet, glmnet_args)
+
+        y_hat <- as.matrix(predict(glm_est, newx = x))
+        e_hat <- matrix(y, n, length(lambda_seq)) - y_hat
+        mse <- colMeans(e_hat^2)
+
+        nvar <- glm_est$df + intercept
+        bic <- n * log(mse) + log(n) * nvar
+        aic <- n * log(mse) + 2 * nvar
+        aicc <- aic + 2 * (nvar) *(nvar + 1) / (n - nvar - 1)
+        hqc <- n * log(mse) + 2 * nvar * log(log(n))
+
+        if(train_method == "aic"){
+            ic <- aic
+        } else if (train_method == "bic"){
+            ic <- bic
+        } else if (train_method == "aicc"){
+            ic <- aicc
+        } else if (train_method == "hqc"){
+            ic <- hqc
+        }
+
+        lambda_temp <- lambda_seq[which.min(ic)]
+
+        if(ada){
+            return(lambda_temp * p / sum(w))
+        } else {
+            return(lambda_temp)
+        }
+
+
+    }else if (train_method == "timeslice") {
 
         train_control <- caret::trainControl(method = "timeslice",
                                              initialWindow = initial_window,
@@ -133,7 +177,7 @@ train_lasso <- function(x,
 
     } else {
 
-        stop("Invalid train_method input. Choose between timeslice and cv.")
+        stop("Invalid train_method input.")
         NULL
     }
 
@@ -156,7 +200,7 @@ train_lasso <- function(x,
 #' @param scalex A boolean: standardize the design matrix or not
 #' @param train_method "timeslice" or "cv"
 #' @param lambda_seq Candidate sequnece of parameters. If NULL, the function generates the sequnce.
-#' @param train_method "timeslice" or "cv"
+#' @param train_method "timeslice", "cv",  "aic", "bic", "aicc", "hqc"
 #' @param nlambda # of lambdas
 #' @param lambda_min_ratio # lambda_min_ratio * lambda_max = lambda_min
 #' @param k k-fold cv if "cv" is chosen
@@ -227,73 +271,128 @@ train_replasso <- function(x,
 
         }
 
-        if (train_method == "cv"){
+        if (train_method %in% c("cv", "timeslice")) {
 
-            data_split <- list(train = list(), test = list())
-            ind_seq <- 1:n
-            seq_interval = split(ind_seq, ceiling(seq_along(1:n)/(n/k)))
+            if (train_method == "cv"){
+
+                data_split <- list(train = list(), test = list())
+                ind_seq <- 1:n
+                seq_interval <- split(ind_seq, ceiling(seq_along(1:n)/(n/k)))
 
 
-            for(j in 1:k){
-                data_split$train[[j]] <-  ind_seq[-seq_interval[[j]]]
-                data_split$test[[j]] <- ind_seq[seq_interval[[j]]]
+                for(j in 1:k){
+                    data_split$train[[j]] <-  ind_seq[-seq_interval[[j]]]
+                    data_split$test[[j]] <- ind_seq[seq_interval[[j]]]
+                }
+
+            } else if (train_method == "timeslice") {
+
+                data_split <- caret::createTimeSlices(y,
+                                                      initialWindow = initial_window,
+                                                      horizon = horizon,
+                                                      fixedWindow = fixed_window)
             }
 
-        } else if (train_method == "timeslice") {
+            MSE = rep(0, length(lambda_seq))
 
-            data_split <- caret::createTimeSlices(y,
-                                                  initialWindow = initial_window,
-                                                  horizon = horizon,
-                                                  fixedWindow = fixed_window)
-        } else {
-            stop("Invalid train_method input. Choose between timeslice and cv.")
-            NULL
-        }
+            for(i in 1:length(lambda_seq)){
 
-        MSE = rep(0, length(lambda_seq))
+                lambda = lambda_seq[i]
 
-        for(i in 1:length(lambda_seq)){
-
-            lambda = lambda_seq[i]
-
-            for(j in 1:length(data_split$train)){
+                for(j in 1:length(data_split$train)){
 
 
-                y_j <- y[data_split$train[[j]]]
-                x_j <- xx[data_split$train[[j]], ]
+                    y_j <- y[data_split$train[[j]]]
+                    x_j <- xx[data_split$train[[j]], ]
 
-                y_p <- as.matrix(y[data_split$test[[j]]])
-                x_p <- xx[data_split$test[[j]], ]
+                    y_p <- as.matrix(y[data_split$test[[j]]])
+                    x_p <- xx[data_split$test[[j]], ]
 
-                result = lasso_weight_single(x_j,
-                                             y_j,
+                    result <- lasso_weight_single(x_j,
+                                                 y_j,
+                                                 lambda = lambda,
+                                                 w = w,
+                                                 intercept = intercept,
+                                                 scalex = scalex)
+
+                    a_ada <- as.numeric(result$ahat)
+                    b_ada <- as.numeric(result$bhat)
+
+                    if(intercept){
+                        coef_ada <- c(a_ada, b_ada)
+                        mse_j <- colMeans( (y_p - cbind(1, x_p) %*% coef_ada)^2 )
+                    }
+                    else{
+                        coef_ada <- b_ada
+                        mse_j <- mean( (y_p - as.matrix(x_p) * coef_ada)^2 )
+                    }
+
+                    MSE[i] <- MSE[i] + mse_j
+                }
+
+            }
+
+
+            ind_sel <-  which.min(MSE)
+            lambda <- lambda_seq[ind_sel]
+            return(lambda)
+
+        } else if (train_method %in% c("aic", "bic", "aicc", "hqc")) {
+
+
+            Coef_hat <- matrix(0, p_selected + intercept, length(lambda_seq))
+            Df <- rep(0, length(lambda_seq))
+
+            for(ll in length(lambda_seq)){
+
+                lambda <- lambda_seq[ll]
+
+                result = lasso_weight_single(xx,
+                                             y,
                                              lambda = lambda,
                                              w = w,
                                              intercept = intercept,
                                              scalex = scalex)
 
-                a_ada = as.numeric(result$ahat)
-                b_ada = as.numeric(result$bhat)
+                a_ada <- as.numeric(result$ahat)
+                b_ada <- as.numeric(result$bhat)
 
                 if(intercept){
-                    coef_ada = c(a_ada, b_ada)
-                    mse_j = colMeans( (y_p - cbind(1, x_p) %*% coef_ada)^2 )
+                    coef_ada <- c(a_ada, b_ada)
                 }
                 else{
-                    coef_ada = b_ada
-                    mse_j = mean( (y_p - as.matrix(x_p) * coef_ada)^2 )
+                    coef_ada <- b_ada
                 }
 
-                MSE[i] = MSE[i] + mse_j
+                Coef_hat[, ll] <- coef_ada
+                Df[ll] <- sum( b_ada != 0 )
             }
 
+            y_hat <- cbind(1, xx) %*% Coef_hat
+            e_hat <- y - y_hat
+            mse <- colMeans(e_hat^2)
+
+            nvar <- Df + intercept
+            bic <- n * log(mse) + log(n) * nvar
+            aic <- n * log(mse) + 2 * nvar
+            aicc <- aic + 2 * (nvar) *(nvar + 1) / (n - nvar - 1)
+            hqc <- n * log(mse) + 2 * nvar * log(log(n))
+
+            if(train_method == "aic"){
+                ic <- aic
+            } else if (train_method == "bic"){
+                ic <- bic
+            } else if (train_method == "aicc"){
+                ic <- aicc
+            } else if (train_method == "hqc"){
+                ic <- hqc
+            }
+
+            return( lambda_seq[which.min(ic)] )
+
+        } else {
+            stop("Invalid train_method input.")
+            NULL
         }
-
-
-        ind_sel = which.min(MSE)
-        lambda = lambda_seq[ind_sel]
-        return(lambda)
     }
-
-
 }

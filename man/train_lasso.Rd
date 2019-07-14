@@ -25,7 +25,7 @@ train_lasso(x, y, ada = TRUE, gamma = 1, intercept = TRUE,
 
 \item{lambda_seq}{Candidate sequnece of parameters. If NULL, the function generates the sequnce.}
 
-\item{train_method}{"timeslice" or "cv"}
+\item{train_method}{"timeslice", "cv", "aic", "bic", "aicc", "hqc"}
 
 \item{nlambda}{# of lambdas}
 

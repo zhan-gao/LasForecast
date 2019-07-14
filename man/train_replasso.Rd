@@ -39,7 +39,7 @@ train_replasso(x, y, b_first, gamma = 1, intercept = TRUE,
 
 \item{fixed_window}{control "timeslice"}
 
-\item{train_method}{"timeslice" or "cv"}
+\item{train_method}{"timeslice", "cv",  "aic", "bic", "aicc", "hqc"}
 }
 \value{
 bestTune
