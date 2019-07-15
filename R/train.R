@@ -72,7 +72,6 @@ train_lasso <- function(x,
 
         glmnet_args <- list(x = x,
                             y = y,
-                            lambda = lambda_seq,
                             foldid = foldid_vec(n, k = k),
                             intercept = intercept,
                             standardize = scalex)
