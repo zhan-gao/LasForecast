@@ -10,16 +10,22 @@ License: MIT
 Encoding: UTF-8
 LazyData: true
 depends:
-    doParallel,
-    dplyr,
+    ggplot2,
     glmnet,
-    parallel,
-    foreach
+    gridExtra,
+    grid
 Imports: 
     caret,
-    Matrix
+    Matrix,
+    lubridate,
+    zoo,
+    reshape2
 Suggests:
     CVXR,
     Rmosek,
-    SparseM
+    SparseM,
+    doParallel,
+    parallel,
+    foreach,
+    dplyr
 RoxygenNote: 6.1.1

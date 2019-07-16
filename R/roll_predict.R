@@ -246,6 +246,8 @@ roll_predict <- function(x, y, roll_window, h = 1, methods_use = c("RW",
     save_result$y <- y
     save_result$x <- x
     save_result$methods_use <- methods_use
+    save_result$roll_window <- roll_window
+    save_result$h <- h
 
     return(save_result)
 }
