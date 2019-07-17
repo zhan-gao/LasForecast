@@ -74,7 +74,7 @@ roll_predict <- function(x, y, roll_window, h = 1, methods_use = c("RW",
 
         # ---------------- RWwW ----------------
 
-        if("RWwD" %in% methods_use) save_result$RWwD$y_hat <- mean(y_est)
+        if("RWwD" %in% methods_use) save_result$RWwD$y_hat[tt] <- mean(y_est)
 
         # ---------------- OLS ----------------
 
@@ -217,8 +217,8 @@ roll_predict <- function(x, y, roll_window, h = 1, methods_use = c("RW",
 
             coef_ada_post <- post_lasso(x_est, y_est, coef_ada)
 
-            save_result$ALasso$y_hat[tt] <- sum(c(1, x_for) * coef_ada_post)
-            save_result$ALasso$beta_hat[tt, ] <- coef_ada_post[-1]
+            save_result$post_ALasso$y_hat[tt] <- sum(c(1, x_for) * coef_ada_post)
+            save_result$post_ALasso$beta_hat[tt, ] <- coef_ada_post[-1]
 
         }
 
@@ -228,8 +228,8 @@ roll_predict <- function(x, y, roll_window, h = 1, methods_use = c("RW",
 
             coef_rep_post <- post_lasso(x_est, y_est, coef_rep)
 
-            save_result$RepLasso$y_hat[tt] <- sum(c(1, x_for) * coef_rep_post)
-            save_result$RepLasso$beta_hat[tt, ] <- coef_rep_post[-1]
+            save_result$post_RepLasso$y_hat[tt] <- sum(c(1, x_for) * coef_rep_post)
+            save_result$post_RepLasso$beta_hat[tt, ] <- coef_rep_post[-1]
         }
 
         t_use <- Sys.time() - t_start
