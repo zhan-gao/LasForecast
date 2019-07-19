@@ -368,7 +368,7 @@ train_replasso <- function(x,
             }
 
             y_hat <- cbind(1, xx) %*% Coef_hat
-            e_hat <- y - y_hat
+            e_hat <- matrix(y, n, length(lambda_seq)) - y_hat
             mse <- colMeans(e_hat^2)
 
             nvar <- Df + intercept
