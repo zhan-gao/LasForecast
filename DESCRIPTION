@@ -13,13 +13,16 @@ Depends:
     ggplot2,
     glmnet,
     gridExtra,
-    grid
+    grid,
+    gurobi,
+    slam
 Imports: 
     caret,
     Matrix,
     lubridate,
     zoo,
-    reshape2
+    reshape2,
+    L0Learn
 Suggests:
     CVXR,
     Rmosek,
