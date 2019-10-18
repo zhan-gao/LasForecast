@@ -9,7 +9,8 @@
 #' @param h forecast horizon
 #' @param method_use method in use
 #' @param train_method_las parameter tuning method for Lasso type methods. For comparison, all Lasso type methods shares the same train_method.
-
+#' @param verb boolean to control whether print information on screen
+#' @param ar_order 0 or 1 to control whether include ar(1) lag or not
 #' @export
 #'
 roll_predict <- function(x, y, roll_window, h = 1, methods_use = c("RW",
@@ -23,21 +24,28 @@ roll_predict <- function(x, y, roll_window, h = 1, methods_use = c("RW",
                                                                    "post_Lasso_Std",
                                                                    "post_ALasso",
                                                                    "post_RepLasso"),
-                         train_method_las = "cv", verb = TRUE){
+                         train_method_las = "cv", verb = TRUE, ar_order = 0){
 
     x <- as.matrix(x)
-    n = nrow(x)
-    p = ncol(x)
+    n <- nrow(x)
+    p <- ncol(x)
     m <- length(methods_use)
+
+    # Number of forecasts
+    if(ar_order == 0){
+        num_forecast <- n - roll_window
+    } else if (ar_order == 1){
+        num_forecast <- n - roll_window - 2*h
+    }
 
     # Containers
     save_result <- as.list(rep(0, m))
     names(save_result) <- methods_use
     for(i in 1:m){
-        save_result[[i]] <- list(y_hat = rep(0, n - roll_window),
-                                 beta_hat = matrix(0, n - roll_window, p, dimnames = list(NULL, colnames(x))),
-                                 tuning_param = rep(0, n - roll_window),
-                                 df = rep(0, n - roll_window))
+        save_result[[i]] <- list(y_hat = rep(0, num_forecast),
+                                 beta_hat = matrix(0, num_forecast, p + ar_order, dimnames = list(NULL, colnames(x))),
+                                 tuning_param = rep(0, num_forecast),
+                                 df = rep(0, num_forecast))
     }
 
     # Prediction starts from t0
@@ -45,28 +53,44 @@ roll_predict <- function(x, y, roll_window, h = 1, methods_use = c("RW",
 
     for(i in t0:n){
 
-        if(verb){
-            cat("Rolling Window = ", roll_window, ", h = ", h, ", Prediction: ",
-                i - roll_window, " / ", (n - roll_window), "\n" )
-        }
-
         t_start <- Sys.time()
 
         # current index
-        tt <- i - roll_window
+        tt <- i - roll_window - ar_order * (2*h)
 
         # Prepare data
-        if(i < t0 + h) {
-            nn = i - h - 1
-            x_est = as.matrix(x[1:(i - h - 1), ])
-            y_est = as.matrix(y[2:(i - h)])
-            x_for = x[i - 1, ]
-        } else{
-            nn = roll_window
-            x_est = as.matrix(x[(i - roll_window - h):(i - h - 1), ])
-            y_est = as.matrix(y[(i - roll_window - h + 1):(i - h)])
-            x_for = x[i - 1, ]
+
+        if(ar_order == 0){
+            if(i < t0 + h) {
+                nn = i - h - 1
+                x_est = as.matrix(x[1:(i - h - 1), ])
+                y_est = as.matrix(y[2:(i - h)])
+                x_for = x[i - 1, ]
+            } else{
+                nn = roll_window
+                x_est = as.matrix(x[(i - roll_window - h):(i - h - 1), ])
+                y_est = as.matrix(y[(i - roll_window - h + 1):(i - h)])
+                x_for = x[i - 1, ]
+            }
+        } else {
+
+            if (i < t0 + 2*h) {
+                next
+            } else {
+                nn = roll_window
+                x_est = cbind(as.matrix(x[(i - roll_window - h):(i - h - 1),]),
+                              as.matrix(y[(i - roll_window - 2*h - 1):(i - 2*h)]))
+                y_est = as.matrix(y[(i - roll_window - h + 1):(i - h)])
+                x_for = c(x[i - 1, ], y[i - h])
+            }
+
         }
+
+        if(verb){
+            cat("Rolling Window = ", roll_window, ", h = ", h, ", Prediction: ",
+                i - roll_window - ar_order * (2*h), " / ", (num_forecast), "\n" )
+        }
+
 
         # ---------------- RW ----------------
 
