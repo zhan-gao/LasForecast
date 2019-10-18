@@ -7,7 +7,7 @@
 roll_predict(x, y, roll_window, h = 1, methods_use = c("RW", "RWwD",
   "OLS", "Lasso", "Lasso_Std", "ALasso", "RepLasso", "post_Lasso",
   "post_Lasso_Std", "post_ALasso", "post_RepLasso"),
-  train_method_las = "cv", verb = TRUE)
+  train_method_las = "cv", verb = TRUE, ar_order = 0)
 }
 \arguments{
 \item{x}{Full sample predictor}
@@ -19,6 +19,10 @@ roll_predict(x, y, roll_window, h = 1, methods_use = c("RW", "RWwD",
 \item{h}{forecast horizon}
 
 \item{train_method_las}{parameter tuning method for Lasso type methods. For comparison, all Lasso type methods shares the same train_method.}
+
+\item{verb}{boolean to control whether print information on screen}
+
+\item{ar_order}{0 or 1 to control whether include ar1 lag or not}
 
 \item{method_use}{method in use}
 }

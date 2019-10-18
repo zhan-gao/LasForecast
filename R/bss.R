@@ -3,8 +3,8 @@
 #'
 #' Make use of Gurobi solver
 #'
-#' @param y
-#' @param X
+#' @param y forecast target
+#' @param X predictors
 #' @param b0 initial estimator
 #' @param tau parameter to obtain bounds
 #' @param tol precision tolerence

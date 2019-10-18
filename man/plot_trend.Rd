@@ -14,7 +14,7 @@ plot_trend(y_0, y_hat, dates, pt_num = 4, col_vec = NULL,
 \item{y_hat}{Predicted values by m different methods, n-by-m matrix, colnames well defined}
 
 \item{dates}{Date vector of class "Date". \cr
-Use \textit{lubridate} and \textit{zoo} to transfer original date vector to "Date" class}
+Use lubridate and zoo to transfer original date vector to "Date" class}
 
 \item{pt_num}{Number date points (pt_num + 1) wanted on the x-axis}
 

@@ -5,17 +5,17 @@ Authors@R: c(
     person("Zhan", "Gao", email = "zhangao@usc.edu", role = c("aut", "cre")),
     person("Zhentao", "Shi", email = "zhentaoshi@cuhk.edu.hk", role = "aut"))
 Description: What the package does (one paragraph).
-Depends: R (>= 3.5.2)
-License: MIT
-Encoding: UTF-8
-LazyData: true
-Depends:
+Depends: 
+    R (>= 3.5.2),
     ggplot2,
     glmnet,
     gridExtra,
     grid,
     gurobi,
     slam
+License: MIT
+Encoding: UTF-8
+LazyData: true
 Imports: 
     caret,
     Matrix,

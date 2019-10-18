@@ -10,7 +10,8 @@
 #' @param method_use method in use
 #' @param train_method_las parameter tuning method for Lasso type methods. For comparison, all Lasso type methods shares the same train_method.
 #' @param verb boolean to control whether print information on screen
-#' @param ar_order 0 or 1 to control whether include ar(1) lag or not
+#' @param ar_order 0 or 1 to control whether include ar1 lag or not
+#'
 #' @export
 #'
 roll_predict <- function(x, y, roll_window, h = 1, methods_use = c("RW",
@@ -35,17 +36,32 @@ roll_predict <- function(x, y, roll_window, h = 1, methods_use = c("RW",
     if(ar_order == 0){
         num_forecast <- n - roll_window
     } else if (ar_order == 1){
-        num_forecast <- n - roll_window - 2*h
+        num_forecast <- n - roll_window - 2*h + 1
+
+        if(h == 1){
+            warning("If the application is return prediction including both divident price ratio (dp) and dividend yield ratio (dy), \n
+                    then it can cause multicollinearity problem to include lagged term.")
+        }
+
     }
 
     # Containers
     save_result <- as.list(rep(0, m))
     names(save_result) <- methods_use
     for(i in 1:m){
-        save_result[[i]] <- list(y_hat = rep(0, num_forecast),
-                                 beta_hat = matrix(0, num_forecast, p + ar_order, dimnames = list(NULL, colnames(x))),
-                                 tuning_param = rep(0, num_forecast),
-                                 df = rep(0, num_forecast))
+        save_result[[i]] <- list(
+            y_hat = rep(0, num_forecast),
+            beta_hat = matrix(
+                0,
+                num_forecast,
+                p + ar_order,
+                dimnames = ifelse(ar_order == 0, list(NULL, colnames(x)), list(NULL, c(
+                    colnames(x), "AR(1)"
+                )))
+            ),
+            tuning_param = rep(0, num_forecast),
+            df = rep(0, num_forecast)
+        )
     }
 
     # Prediction starts from t0
@@ -74,12 +90,12 @@ roll_predict <- function(x, y, roll_window, h = 1, methods_use = c("RW",
             }
         } else {
 
-            if (i < t0 + 2*h) {
+            if (i < t0 + 2*h - 1) {
                 next
             } else {
                 nn = roll_window
                 x_est = cbind(as.matrix(x[(i - roll_window - h):(i - h - 1),]),
-                              as.matrix(y[(i - roll_window - 2*h - 1):(i - 2*h)]))
+                              as.matrix(y[(i - roll_window - 2*h + 1):(i - 2*h)]))
                 y_est = as.matrix(y[(i - roll_window - h + 1):(i - h)])
                 x_for = c(x[i - 1, ], y[i - h])
             }

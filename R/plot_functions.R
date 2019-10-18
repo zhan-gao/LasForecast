@@ -2,7 +2,7 @@
 #' @param y_0 True predict target, length n vector
 #' @param y_hat Predicted values by m different methods, n-by-m matrix, colnames well defined
 #' @param dates Date vector of class "Date". \cr
-#' Use \textit{lubridate} and \textit{zoo} to transfer original date vector to "Date" class
+#' Use lubridate and zoo to transfer original date vector to "Date" class
 #' @param pt_num Number date points (pt_num + 1) wanted on the x-axis
 #' @param col_vec A vector indicates colors of different trends. \cr
 #' e.g.:  c("#D8DBE2", "#F46B7B", "#518DE8", "#FFBC42" )\cr
@@ -100,7 +100,7 @@ plot_trend <- function(y_0,
 #' names of list well defined
 #' @param dates Date vector of class "Date". \cr
 #' @param pt_num Number date points (pt_num + 1) wanted on the x-axis
-#' Use \textit{lubridate} and \textit{zoo} to transfer original date vector to "Date" class
+#' Use lubridate and zoo to transfer original date vector to "Date" class
 #' @param col_vec A vector indicates colors of different trends. \cr
 #' e.g.:  c("#D8DBE2", "#F46B7B", "#518DE8", "#FFBC42" )\cr
 #' If NULL, use ggplot default.

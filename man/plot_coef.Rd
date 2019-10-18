@@ -15,7 +15,7 @@ names of list well defined}
 \item{dates}{Date vector of class "Date". \cr}
 
 \item{pt_num}{Number date points (pt_num + 1) wanted on the x-axis
-Use \textit{lubridate} and \textit{zoo} to transfer original date vector to "Date" class}
+Use lubridate and zoo to transfer original date vector to "Date" class}
 
 \item{col_vec}{A vector indicates colors of different trends. \cr
 e.g.:  c("#D8DBE2", "#F46B7B", "#518DE8", "#FFBC42" )\cr
