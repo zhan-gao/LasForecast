@@ -49,19 +49,34 @@ roll_predict <- function(x, y, roll_window, h = 1, methods_use = c("RW",
     save_result <- as.list(rep(0, m))
     names(save_result) <- methods_use
     for(i in 1:m){
-        save_result[[i]] <- list(
-            y_hat = rep(0, num_forecast),
-            beta_hat = matrix(
-                0,
-                num_forecast,
-                p + ar_order,
-                dimnames = ifelse(ar_order == 0, list(NULL, colnames(x)), list(NULL, c(
-                    colnames(x), "AR(1)"
-                )))
-            ),
-            tuning_param = rep(0, num_forecast),
-            df = rep(0, num_forecast)
-        )
+
+        if(ar_order == 0){
+
+            save_result[[i]] <- list(
+                y_hat = rep(0, num_forecast),
+                beta_hat = matrix(
+                    0,
+                    num_forecast,
+                    p + ar_order,
+                    dimnames = list(NULL, colnames(x))
+                ),
+                tuning_param = rep(0, num_forecast),
+                df = rep(0, num_forecast)
+            )
+
+        } else{
+            save_result[[i]] <- list(
+                y_hat = rep(0, num_forecast),
+                beta_hat = matrix(
+                    0,
+                    num_forecast,
+                    p + ar_order,
+                    dimnames = list(NULL, c(colnames(x), "AR(1)"))
+                ),
+                tuning_param = rep(0, num_forecast),
+                df = rep(0, num_forecast)
+            )
+        }
     }
 
     # Prediction starts from t0
