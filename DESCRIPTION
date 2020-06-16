@@ -7,10 +7,7 @@ Authors@R: c(
 Description: What the package does (one paragraph).
 Depends: 
     R (>= 3.5.2),
-    ggplot2,
     glmnet,
-    gridExtra,
-    grid,
     slam,
     lemon
 License: MIT
