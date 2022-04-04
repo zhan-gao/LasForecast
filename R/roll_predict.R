@@ -24,7 +24,8 @@ roll_predict <- function(x, y, roll_window, h = 1, methods_use = c("RW",
                                                                    "post_Lasso",
                                                                    "post_Lasso_Std",
                                                                    "post_ALasso",
-                                                                   "post_RepLasso"),
+                                                                   "post_RepLasso",
+                                                                   "bss"),
                          train_method_las = "cv", verb = TRUE, ar_order = 0){
 
     x <- as.matrix(x)
@@ -285,6 +286,19 @@ roll_predict <- function(x, y, roll_window, h = 1, methods_use = c("RW",
 
             save_result$post_RepLasso$y_hat[tt] <- sum(c(1, x_for) * coef_rep_post)
             save_result$post_RepLasso$beta_hat[tt, ] <- coef_rep_post[-1]
+        }
+
+        if("bss" %in% methods_use){
+
+
+            result_bss <- bss.bic(y_est, x_est)
+            coef_bss <- result_bss$coef
+
+            save_result$bss$y_hat[tt] <- sum(c(1, x_for) * coef_bss)
+            save_result$bss$beta_hat[tt, ] <- coef_bss[-1]
+            save_result$bss$tuning_param[tt] <- result_bss$k
+            save_result$bss$df[tt] <- sum(coef_bss[-1] != 0)
+
         }
 
         t_use <- Sys.time() - t_start
