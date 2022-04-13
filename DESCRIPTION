@@ -17,11 +17,11 @@ Imports:
     Matrix,
     lubridate,
     zoo,
-    reshape2
-Suggests:
+    reshape2,
     CVXR,
+    SparseM
+Suggests:
     Rmosek,
-    SparseM,
     doParallel,
     parallel,
     foreach,
