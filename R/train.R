@@ -395,3 +395,126 @@ train_replasso <- function(x,
         }
     }
 }
+
+
+
+
+
+# -----
+#' Do parameter tuning for L2-Relaxation
+#'
+#' @export
+
+
+cv.l2 <- function(y, X, intercept = TRUE, m = NULL, tau.seq = NULL, ntau = 100, tau.min.ratio = 0.01,
+                  random = FALSE, init.window.frac = 0.5, horizon = 1, solver = "Rmosek", verb = 0, tol = 1e-5){
+
+    # If is.null(m) = FALSE, i.e. valid input number of folds : m-fold Cross-Validation function
+    # If random = TRUE, split the sample randomly to get groups
+    # If random = FALSE, construct consecutive blocks
+    # If is.null(m), i.e. no m imputs: fixed-rolling window time series cross-validation
+    # specify the fixed window length as a fraction of sample size by `init.window.frac`
+    # specify the forecasting horizon by `horizon`
+    # Allow choosing solver: "Rmosek" or "CVXR"
+
+    #Require package "caret"
+
+    N = length(y)
+    tau.max = NULL
+    MSE = rep(0, ntau)
+
+    # Generate folds
+    if(is.null(m)){
+        slices = createTimeSlices(y, initialWindow = round(init.window.frac*N),
+                                  horizon = horizon, fixedWindow = TRUE)
+        train.set = slices$train
+        test.set = slices$test
+    }else{
+        if(random){
+            # Random split
+            test.set = createFolds(y, k = m, list = TRUE, returnTrain = FALSE)
+            train.set = lapply(test.set, function(s, tot = 1:N){setdiff(tot,s)})
+        }else{
+            # Consecutive blocks
+            test.set = split(1:N, ceiling(seq_along(1:N)/(N/m)))
+            train.set = lapply(test.set, function(s, tot = 1:N){setdiff(tot,s)})
+        }
+    }
+
+    if(solver == "Rmosek"){
+
+        if( is.null(tau.seq) ){
+
+            # Solve the tau* = tau.max
+            tau.max = find.tau.max.mosek(y, X, intercept = intercept, verb = verb, tol = tol)
+            tau.min = tau.max * tau.min.ratio
+            ss = (tau.max / tau.min) ^ (1 / (ntau-1) )
+            tau.seq = tau.min * ss^(0:(ntau-1))
+
+        }
+
+        for(i in 1:ntau){
+
+            tau = tau.seq[i]
+
+            for(j in 1:length(test.set)){
+
+                y.j = y[ train.set[[j]] ]
+                X.j = X[ train.set[[j]], ]
+
+                yp = matrix( y[ test.set[[j]] ], length(test.set[[j]]), 1 )
+                Xp = X[test.set[[j]], ]
+
+                # Implementation of l2-relaxation with tau
+                g(w.hat, a.hat, s.hat) %=% l2.opt.mosek(y.j, X.j, intercept = intercept,
+                                                        tau = tau, verb = verb, tol = tol)
+
+                if(length(yp) == 1) y.hat = c(1,Xp) %*% c(a.hat, w.hat)
+                else y.hat = cbind(1, Xp) %*% c(a.hat, w.hat)
+                MSE[i] = MSE[i] + colMeans( (yp - y.hat)^2 )
+
+            }
+        }
+    }
+    else if(solver == "CVXR"){
+
+        if( is.null(tau.seq) ){
+
+            # Solve the tau* = tau.max
+            tau.max = find.tau.max.cvxr(y, X, intercept = intercept)
+            tau.min = tau.max * tau.min.ratio
+            ss = (tau.max / tau.min) ^ (1 / (ntau-1) )
+            tau.seq = tau.min * ss^(0:(ntau-1))
+
+        }
+
+        for(i in 1:ntau){
+
+            tau = tau.seq[i]
+
+            for(j in 1:length(test.set)){
+
+                y.j = y[ train.set[[j]] ]
+                X.j = X[ train.set[[j]], ]
+
+                yp = matrix( y[ test.set[[j]] ], length(test.set[[j]]), 1 )
+                Xp = X[test.set[[j]], ]
+
+                # Implementation of l2-relaxation with tau
+                g(w.hat, a.hat, s.hat) %=% l2.opt.cvxr(y.j, X.j, intercept = intercept, tau = tau)
+                y.hat = cbind(1, Xp) %*% c(a.hat, w.hat)
+                MSE[i] = MSE[i] + colMeans( (yp - y.hat)^2 )
+
+            }
+        }
+    }
+    else{
+        stop("Please choose a valid solver: either Rmosek or CVXR.")
+    }
+
+    ind.sel = which.min(MSE)
+    tau.opt = tau.seq[ind.sel]
+
+    return(list(tau.opt = tau.opt, tau.max = tau.max, mse = cbind(tau.seq, MSE))) # nolint
+
+}

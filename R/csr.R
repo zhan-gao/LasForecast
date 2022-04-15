@@ -17,6 +17,8 @@
 #' \item{coef}{beta if intercept = F, c(alpha, beta) if intercept = T.}
 #' \item{B}{the ols estimates of all sub-models}
 #' \item{Y.hat}{X %*% B}
+#'
+#' @export
 
 csr <- function(y,
                 X,
@@ -31,10 +33,12 @@ csr <- function(y,
         stop("Error: k is larger than K or k is smaller or equal to 0.")
 
     if (n.k > choose(20, 10))
-        stop("Error: complete subset regression is not feasible for such a large-scale problem.")
+        stop("Error: complete subset regression is
+              not feasible for such a large-scale problem.")
 
     if (n.k <= choose(15, 8)) {
-        # As indicated in the paper and from our experience, it is difficult to handle when K > 15.
+        # As indicated in the paper and from our experience,
+        # it is difficult to handle when K > 15.
         # choose it as a knife edge
 
         # Obtain the predictor
@@ -83,7 +87,7 @@ csr <- function(y,
 
     }
 
-    # Model avaerage
+    # Model average
     b <- rowMeans(B)
     if (intercept)
         Y.hat = cbind(1, X) %*% B
@@ -95,5 +99,74 @@ csr <- function(y,
         B = B,
         Y.hat = Y.hat
     ))
+
+}
+
+
+
+#' Elliott, Gargano and Timmermann (2013) COMPLETE SUBSET REGRESSIONS with BIC
+#'
+#' Choose tuning parameter k by Bayesian Information Criterion (BIC)
+#'
+#' @param y response variable
+#' @param X Predictor matrix
+#' @param C.upper maximum number of subsets to be combined
+#' @param intercept A boolean: include an intercept term or not
+#'
+#'
+#' @return A List contained the estimated coefficients and forecasts
+#' \item{k.hat}{k chosen by BIC}
+#' \item{coef}{Averaged coefficients corresonding to the chosen k}
+
+#' @export
+
+csr.bic = function(y, X, C.upper = 5000, intercept = FALSE, RW = TRUE){
+
+    # Use BIC to choose k and return the estimation result.
+    # If RW = TRUE, then consider k = 0 as well
+
+    p = ncol(X)
+    n = nrow(X)
+
+    # Estimation Procedure
+    Coef = matrix(0, p+intercept, p)
+    for(k in 1:p){
+        Coef[, k] = csr(y, X, k, a, C.upper, intercept)$coef
+    }
+
+    # 4 = 2x2 cases in total
+    if(intercept){
+
+        sigma  = apply( (matrix(y, n, p) - cbind(1, X) %*% Coef)^2, 2, mean )
+
+        if(RW){
+            sigma = c(mean((y - mean(y))^2), sigma)
+            BIC = n * log(sigma) + ((0:p)+1) * log(n)
+            k.hat = which.min(BIC) - 1
+            if(k.hat == 0) return(list(k = k.hat, coef = c(mean(y), rep(0, p))))
+            else return(list(k = k.hat, coef = Coef[, k.hat]))
+        }
+        else{
+            BIC = n * log(sigma) + ((1:p)+1) * log(n)
+            k.hat = which.min(BIC)
+            return(list(k = k.hat, coef = Coef[, k.hat]))
+        }
+    }else{
+
+        sigma = apply( (matrix(y, n, p) - X %*% Coef)^2, 2, mean )
+
+        if(RW){
+            sigma = c(mean(y^2), sigma)
+            BIC = n * log(sigma) + (0:p) * log(n)
+            k.hat = which.min(BIC) - 1
+            if(k.hat == 0) return(list(k = k.hat, coef = rep(0, p)))
+            else return(list(k = k.hat, coef = Coef[, k.hat]))
+        }
+        else{
+            BIC = n * log(sigma) + (1:p) * log(n)
+            k.hat = which.min(BIC)
+            return(list(k = k.hat, coef = Coef[, k.hat]))
+        }
+    }
 
 }
