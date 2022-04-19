@@ -25,6 +25,9 @@ csr <- function(y,
                 k,
                 C.upper = 5000,
                 intercept = FALSE) {
+
+    if (!("matrix" %in% class(X))) X <- as.matrix(X)
+
     K <- ncol(X)
     n.k <- choose(K, k)
 
@@ -125,13 +128,15 @@ csr.bic = function(y, X, C.upper = 5000, intercept = FALSE, RW = TRUE){
     # Use BIC to choose k and return the estimation result.
     # If RW = TRUE, then consider k = 0 as well
 
+    if (!("matrix" %in% class(X))) X <- as.matrix(X)
+
     p = ncol(X)
     n = nrow(X)
 
     # Estimation Procedure
     Coef = matrix(0, p+intercept, p)
     for(k in 1:p){
-        Coef[, k] = csr(y, X, k, a, C.upper, intercept)$coef
+        Coef[, k] = csr(y, X, k, C.upper, intercept)$coef
     }
 
     # 4 = 2x2 cases in total
