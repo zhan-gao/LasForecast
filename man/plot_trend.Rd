@@ -4,9 +4,17 @@
 \alias{plot_trend}
 \title{Trend plot}
 \usage{
-plot_trend(y_0, y_hat, dates, pt_num = 4, col_vec = NULL,
-  line_size = rep(0.75, ncol(y_hat) + 1), alpha_size = rep(0.75,
-  ncol(y_hat) + 1), xlab = NULL, ylab = NULL)
+plot_trend(
+  y_0,
+  y_hat,
+  dates,
+  pt_num = 4,
+  col_vec = NULL,
+  line_size = rep(0.75, ncol(y_hat) + 1),
+  alpha_size = rep(0.75, ncol(y_hat) + 1),
+  xlab = NULL,
+  ylab = NULL
+)
 }
 \arguments{
 \item{y_0}{True predict target, length n vector}

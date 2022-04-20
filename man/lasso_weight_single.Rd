@@ -5,8 +5,7 @@
 \title{Implement weighted Lasso estimation (second step of adaptive lasso) via coordinate descent
 for the case in which only one predictor remains}
 \usage{
-lasso_weight_single(x, y, lambda, w = NULL, intercept = TRUE,
-  scalex = FALSE)
+lasso_weight_single(x, y, lambda, w = NULL, intercept = TRUE, scalex = FALSE)
 }
 \arguments{
 \item{x}{Predictor matrix (n-by-p matrix)}

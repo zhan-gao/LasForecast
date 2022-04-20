@@ -5,8 +5,18 @@
 \title{Implement best subset selection via Mixed Integer Optimization (MIO)
 Select k by BIC}
 \usage{
-bss.bic(y, X, intercept = TRUE, b0 = NULL, tau = 2, tol = 1e-04,
-  MaxIter = 10000, polish = TRUE, time.limit = 1200, RW = TRUE)
+bss.bic(
+  y,
+  X,
+  intercept = TRUE,
+  b0 = NULL,
+  tau = 2,
+  tol = 1e-04,
+  MaxIter = 10000,
+  polish = TRUE,
+  time.limit = 1200,
+  RW = TRUE
+)
 }
 \arguments{
 \item{y}{forecast target}

@@ -4,10 +4,17 @@
 \alias{roll_predict}
 \title{Rolling window forecast}
 \usage{
-roll_predict(x, y, roll_window, h = 1, methods_use = c("RW", "RWwD",
-  "OLS", "Lasso", "Lasso_Std", "ALasso", "RepLasso", "post_Lasso",
-  "post_Lasso_Std", "post_ALasso", "post_RepLasso"),
-  train_method_las = "cv", verb = TRUE, ar_order = 0)
+roll_predict(
+  x,
+  y,
+  roll_window,
+  h = 1,
+  methods_use = c("RW", "RWwD", "OLS", "Lasso", "Lasso_Std", "ALasso", "RepLasso",
+    "post_Lasso", "post_Lasso_Std", "post_ALasso", "post_RepLasso", "bss"),
+  train_method_las = "cv",
+  verb = TRUE,
+  ar_order = 0
+)
 }
 \arguments{
 \item{x}{Full sample predictor}

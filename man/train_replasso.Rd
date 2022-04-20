@@ -4,11 +4,22 @@
 \alias{train_replasso}
 \title{Do parameter tuning for replasso}
 \usage{
-train_replasso(x, y, b_first, gamma = 1, intercept = TRUE,
-  scalex = FALSE, train_method = "timeslice", lambda_seq = NULL,
-  nlambda = 100, lambda_min_ratio = 1e-04, k = 10,
-  initial_window = ceiling(nrow(x) * 0.7), horizon = 1,
-  fixed_window = TRUE)
+train_replasso(
+  x,
+  y,
+  b_first,
+  gamma = 1,
+  intercept = TRUE,
+  scalex = FALSE,
+  train_method = "timeslice",
+  lambda_seq = NULL,
+  nlambda = 100,
+  lambda_min_ratio = 1e-04,
+  k = 10,
+  initial_window = ceiling(nrow(x) * 0.7),
+  horizon = 1,
+  fixed_window = TRUE
+)
 }
 \arguments{
 \item{x}{Predictor matrix (n-by-p matrix)}
@@ -23,7 +34,7 @@ train_replasso(x, y, b_first, gamma = 1, intercept = TRUE,
 
 \item{scalex}{A boolean: standardize the design matrix or not}
 
-\item{train_method}{"timeslice" or "cv"}
+\item{train_method}{"timeslice", "cv",  "aic", "bic", "aicc", "hqc"}
 
 \item{lambda_seq}{Candidate sequnece of parameters. If NULL, the function generates the sequnce.}
 
@@ -38,8 +49,6 @@ train_replasso(x, y, b_first, gamma = 1, intercept = TRUE,
 \item{horizon}{control "timeslice"}
 
 \item{fixed_window}{control "timeslice"}
-
-\item{train_method}{"timeslice", "cv",  "aic", "bic", "aicc", "hqc"}
 }
 \value{
 bestTune

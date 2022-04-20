@@ -3,8 +3,4 @@
 \docType{package}
 \name{LasForecast}
 \alias{LasForecast}
-\alias{LasForecast-package}
 \title{LasForecast: A package for time series forecasting with Lasso-type shrinkage methods in linear models}
-\description{
-LasForecast: A package for time series forecasting with Lasso-type shrinkage methods in linear models
-}

@@ -4,8 +4,17 @@
 \alias{lasso_weight_opt}
 \title{Implement weighted Lasso estimation (second step of adaptive lasso) via optimization solver}
 \usage{
-lasso_weight_opt(x, y, lambda, w = NULL, intercept = TRUE,
-  scalex = FALSE, solver = "CVXR", rtol = 1e-08, verb = 0)
+lasso_weight_opt(
+  x,
+  y,
+  lambda,
+  w = NULL,
+  intercept = TRUE,
+  scalex = FALSE,
+  solver = "CVXR",
+  rtol = 1e-08,
+  verb = 0
+)
 }
 \arguments{
 \item{x}{Predictor matrix (n-by-p matrix)}

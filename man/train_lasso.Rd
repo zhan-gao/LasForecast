@@ -4,11 +4,22 @@
 \alias{train_lasso}
 \title{Do parameter tuning for Lasso and Adaptive lasso}
 \usage{
-train_lasso(x, y, ada = TRUE, gamma = 1, intercept = TRUE,
-  scalex = FALSE, lambda_seq = NULL, train_method = "timeslice",
-  nlambda = 100, lambda_min_ratio = 1e-04, k = 10,
-  initial_window = ceiling(nrow(x) * 0.7), horizon = 1,
-  fixed_window = TRUE)
+train_lasso(
+  x,
+  y,
+  ada = TRUE,
+  gamma = 1,
+  intercept = TRUE,
+  scalex = FALSE,
+  lambda_seq = NULL,
+  train_method = "timeslice",
+  nlambda = 100,
+  lambda_min_ratio = 1e-04,
+  k = 10,
+  initial_window = ceiling(nrow(x) * 0.7),
+  horizon = 1,
+  fixed_window = TRUE
+)
 }
 \arguments{
 \item{x}{Predictor matrix (n-by-p matrix)}

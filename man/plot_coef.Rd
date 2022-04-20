@@ -4,9 +4,17 @@
 \alias{plot_coef}
 \title{Coefficient plot}
 \usage{
-plot_coef(coef_est, dates, pt_num = 4, col_vec = NULL,
-  line_size = rep(0.75, length(coef_est)), alpha_size = rep(0.75,
-  length(coef_est)), xlab = NULL, ylab = NULL, num_col = 1)
+plot_coef(
+  coef_est,
+  dates,
+  pt_num = 4,
+  col_vec = NULL,
+  line_size = rep(0.75, length(coef_est)),
+  alpha_size = rep(0.75, length(coef_est)),
+  xlab = NULL,
+  ylab = NULL,
+  num_col = 1
+)
 }
 \arguments{
 \item{coef_est}{estimated slope by m different methods, list of length m with each element n-by-p matrix\cr

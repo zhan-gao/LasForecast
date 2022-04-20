@@ -4,8 +4,7 @@
 \alias{replasso}
 \title{Implement repeated Lasso estimation}
 \usage{
-replasso(x, y, b.first, lambda, gamma = 1, intercept = TRUE,
-  scalex = FALSE)
+replasso(x, y, b.first, lambda, gamma = 1, intercept = TRUE, scalex = FALSE)
 }
 \arguments{
 \item{x}{Predictor matrix (n-by-p matrix)}

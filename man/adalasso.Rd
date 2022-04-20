@@ -4,8 +4,15 @@
 \alias{adalasso}
 \title{Implement Adaptive Lasso via glmnet}
 \usage{
-adalasso(x, y, lambda, lambda_lasso = NULL, gamma = 1,
-  intercept = TRUE, scalex = FALSE)
+adalasso(
+  x,
+  y,
+  lambda,
+  lambda_lasso = NULL,
+  gamma = 1,
+  intercept = TRUE,
+  scalex = FALSE
+)
 }
 \arguments{
 \item{x}{Predictor matrix (n-by-p matrix)}
