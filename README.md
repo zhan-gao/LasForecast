@@ -5,8 +5,7 @@ This package intends to develop a framework for economic forecasting in a data-r
 The package exploits the advantage of well-established packages like `glmnet` and model training framework `caret`.
 
 ### Installation
-```{r}
+```r
 install.packages("devtools")
-devtools::install_github("chenyang45/BoostedHP")
-library("bHP")
+devtools::install_github("zhan-gao/LasForecast")
 ```
