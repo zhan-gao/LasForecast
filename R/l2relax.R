@@ -15,8 +15,8 @@
 #'
 #'
 
-l2_relax_comb_opt <- function(sigma_mat, tau, solver = "CVXR", tol = 1e-7) {
-
+l2_relax_comb_opt <- function(sigma_mat, tau, solver = "CVXR",
+                              tol = 1e-8, maxiter = 1000) {
     n <- ncol(sigma_mat) # number of forecasts to be combined
 
     if (solver == "Rmosek") {
@@ -28,7 +28,7 @@ l2_relax_comb_opt <- function(sigma_mat, tau, solver = "CVXR", tol = 1e-7) {
         A_1 <- rbind(
             c(rep(1, n), 0), # sum of weight == 1
             # ||Sigma_hat w + gamma||_\infty \leq tau
-            cbind(sigma_mat, rep(1, n)) 
+            cbind(sigma_mat, rep(1, n))
         )
         # transformation of the squared l2 norm
         A_2 <- rbind(c(1 / 2, -1, 0), c(1 / 2, 0, -1))
@@ -55,7 +55,7 @@ l2_relax_comb_opt <- function(sigma_mat, tau, solver = "CVXR", tol = 1e-7) {
         }
     } else if (solver == "CVXR") {
         w_gamma <- Variable(n + 1)
-        w  <- w_gamma[1:n]
+        w <- w_gamma[1:n]
         gamm <- w_gamma[n + 1]
 
         objective <- Minimize(0.5 * sum_squares(w))
@@ -68,14 +68,22 @@ l2_relax_comb_opt <- function(sigma_mat, tau, solver = "CVXR", tol = 1e-7) {
         problem <- Problem(objective, constraints)
         prob_data <- get_problem_data(problem, solver = "ECOS")
         ECOS_dims <- ECOS.dims_to_solver_dict(prob_data$data[["dims"]])
-        solver_output <- ECOSolveR::ECOS_csolve(c = prob_data$data[["c"]],
-                                                G = prob_data$data[["G"]],
-                                                h = prob_data$data[["h"]],
-                                                dims = ECOS_dims,
-                                                A = prob_data$data[["A"]],
-                                                b = prob_data$data[["b"]])
-        result <- unpack_results(problem, solver_output,
-                                 prob_data$chain, prob_data$inverse_data)
+        solver_output <- ECOSolveR::ECOS_csolve(
+            c = prob_data$data[["c"]],
+            G = prob_data$data[["G"]],
+            h = prob_data$data[["h"]],
+            dims = ECOS_dims,
+            A = prob_data$data[["A"]],
+            b = prob_data$data[["b"]],
+            control = ECOSolveR::ecos.control(
+                reltol = tol,
+                maxit = maxiter
+            )
+        )
+        result <- unpack_results(
+            problem, solver_output,
+            prob_data$chain, prob_data$inverse_data
+        )
         if (result$status != "optimal") {
             warning(result$status)
         }
