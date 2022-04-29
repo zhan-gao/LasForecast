@@ -5,7 +5,7 @@
 \title{l2-relaxation forecast combination
 A wrapper function with parameter tuning and estimation.}
 \usage{
-l2_relax(y, x, tau, solver = "CVXR", tol = 1e-07)
+l2_relax(y, x, tau, solver = "CVXR", tol = 1e-08)
 }
 \arguments{
 \item{y}{foreccasting target}
@@ -22,7 +22,7 @@ l2_relax(y, x, tau, solver = "CVXR", tol = 1e-07)
 A list
 }
 \description{
-Details refer to Shi, Su and Xie (2022) 
-  "l_2-relaxation: 
+Details refer to Shi, Su and Xie (2022)
+  "l_2-relaxation:
      With applications to forecast combination and portfolio analysis"
 }

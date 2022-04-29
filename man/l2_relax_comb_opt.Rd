@@ -2,12 +2,12 @@
 % Please edit documentation in R/l2relax.R
 \name{l2_relax_comb_opt}
 \alias{l2_relax_comb_opt}
-\title{Solve L2-relaxation primal problem 
-Details refer to Shi, Su and Xie (2022) 
-  "l_2-relaxation: 
+\title{Solve L2-relaxation primal problem
+Details refer to Shi, Su and Xie (2022)
+  "l_2-relaxation:
      With applications to forecast combination and portfolio analysis"}
 \usage{
-l2_relax_comb_opt(sigma_mat, tau, solver = "CVXR", tol = 1e-07)
+l2_relax_comb_opt(sigma_mat, tau, solver = "CVXR", tol = 1e-08)
 }
 \arguments{
 \item{sigma_mat}{Sample covariance matrix}
@@ -22,8 +22,8 @@ l2_relax_comb_opt(sigma_mat, tau, solver = "CVXR", tol = 1e-07)
 w_hat: The estimated combination weights
 }
 \description{
-Solve L2-relaxation primal problem 
-Details refer to Shi, Su and Xie (2022) 
-  "l_2-relaxation: 
+Solve L2-relaxation primal problem
+Details refer to Shi, Su and Xie (2022)
+  "l_2-relaxation:
      With applications to forecast combination and portfolio analysis"
 }

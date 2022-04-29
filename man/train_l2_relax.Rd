@@ -11,7 +11,7 @@ train_l2_relax(
   tau.seq = NULL,
   ntau = 100,
   tau.min.ratio = 0.01,
-  train_method = FALSE,
+  train_method = "oos",
   solver = "Rmosek",
   tol = 1e-05
 )
@@ -27,8 +27,8 @@ train_l2_relax(
 
 \item{ntau}{number of tau values}
 
-\item{tau.min.ratio}{ratio of the minimum tau in tau.seq over the maximum 
-(which is the smallest tau such that 
+\item{tau.min.ratio}{ratio of the minimum tau in tau.seq over the maximum
+(which is the smallest tau such that
 equal-weight solves the forecast combination optimization.)}
 
 \item{train_method}{"cv_random", "cv" or "oos"}

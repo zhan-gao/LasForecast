@@ -25,11 +25,13 @@ roll_predict_l2relax <- function(x,
                                  y,
                                  roll_window,
                                  h = 1,
+                                 k_max = 4,
+                                 m = 5,
                                  ntau = 100,
                                  tau_min_ratio = 0.01,
                                  train_method = "oos",
                                  solver = "CVXR",
-                                 tol = 1e-8,
+                                 tol = 1e-7,
                                  verb = TRUE
 ) {
     x <- as.matrix(x)
@@ -40,10 +42,10 @@ roll_predict_l2relax <- function(x,
 
     # Containers
     save_result <- list(
-        y_hat_csr = matrix(0, num_forecast, p - 1),
-        y_hat_l2relax = matrix(0, num_forecast, p - 1),
-        tau_opt = matrix(0, num_forecast, p - 1),
-        tau_max = matrix(0, num_forecast, p - 1)
+        y_hat_csr = matrix(0, num_forecast, k_max),
+        y_hat_l2relax = matrix(0, num_forecast, k_max),
+        tau_opt = matrix(0, num_forecast, k_max),
+        tau_max = matrix(0, num_forecast, k_max)
     )
 
     # Prediction starts from t0
@@ -54,7 +56,7 @@ roll_predict_l2relax <- function(x,
         t_start <- Sys.time()
 
         # current index
-        tt <- i - roll_window - ar_order * (2*h)
+        tt <- i - roll_window
 
         # Prepare data
         if(i < t0 + h) {
@@ -71,13 +73,14 @@ roll_predict_l2relax <- function(x,
 
         if(verb){
             cat("Rolling Window = ", roll_window, ", h = ", h, ", Prediction: ",
-                i - roll_window - ar_order * (2*h), " / ", (num_forecast), "\n" )
+                i - roll_window, " / ", (num_forecast), "\n" )
         }
 
         # Estimation.
-        for(k in 1:(p-1)) {
+        for(k in 1:k_max) {
+
             # CSR
-            csr_res <- csr(y_est, x_est, k, intercept = T)
+            csr_res <- csr(y_est, x_est, k, intercept = TRUE)
             save_result$y_hat_csr[tt, k] <- sum(c(1, x_for) * csr_res$coef)
 
             # L2Relax
@@ -99,6 +102,12 @@ roll_predict_l2relax <- function(x,
             save_result$y_hat_l2relax[tt, k] <- as.numeric(c(1, x_for) %*% csr_res$B %*% w_hat)
             save_result$tau_opt[tt, k] <- tau_opt
             save_result$tau_max[tt, k] <- tau_max
+
+            if (k == k_max) {
+                cat(k, "---\n")
+            } else {
+                cat(k, "---")
+            }
         }
 
         t_use <- Sys.time() - t_start
@@ -107,7 +116,7 @@ roll_predict_l2relax <- function(x,
     }
 
     y_0 <- y[-(1:roll_window)]
-    mse <- matrix(0, p - 1, 2)
+    mse <- matrix(0, k_max, 2)
     colnames(mse) <- c("CSR", "L2Relax")
     mse[, 1] <- col_means((save_result$y_hat_csr - y_0)^2)
     mse[, 2] <- col_means((save_result$y_hat_l2relax - y_0)^2)
