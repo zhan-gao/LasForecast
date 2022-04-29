@@ -403,11 +403,11 @@ train_replasso <- function(x,
 #'
 #' This function finds the smallest tau for L2-Relaxation such that
 #' equal-weight solves the forecast combination optimization.
-#' 
+#'
 #' @param sigma_mat Sample covariance matrix
-#' 
+#'
 #' @return smallest tau corresponds to equal-weight
-#' 
+#'
 #' @export
 
 find_tau_max  <- function(sigma_mat) {
@@ -421,26 +421,26 @@ find_tau_max  <- function(sigma_mat) {
 
 
 #' Do parameter tuning for L2-Relaxation
-#' 
+#'
 #' @import caret
-#' 
+#'
 #' @param y foreccasting target
 #' @param x forecasts to be combined
 #' @param tau.seq Sequence of tau values
 #' @param m number of folds
 #' @param ntau number of tau values
-#' @param tau.min.ratio ratio of the minimum tau in tau.seq over the maximum 
-#'      (which is the smallest tau such that 
+#' @param tau.min.ratio ratio of the minimum tau in tau.seq over the maximum
+#'      (which is the smallest tau such that
 #'      equal-weight solves the forecast combination optimization.)
 #' @param train_method "cv_random", "cv" or "oos"
 #' @param solver "Rmosek" or "CVXR"
 #' @tol tolerance for the solver
-#' 
-#' 
+#'
+#'
 #' @return besttune
 
 train_l2_relax <- function(y, x,  m = 5, tau.seq = NULL, ntau = 100, tau.min.ratio = 0.01,
-                  train_method = FALSE, solver = "Rmosek", tol = 1e-5) {
+                  train_method = "oos", solver = "Rmosek", tol = 1e-5) {
 
     N <- length(y)
 
@@ -478,21 +478,21 @@ train_l2_relax <- function(y, x,  m = 5, tau.seq = NULL, ntau = 100, tau.min.rat
         ss <- (tau.max / tau.min)^(1 / (ntau - 1))
         tau.seq <- tau.min * ss^(0:(ntau - 1))
     }
-    
+
     for (i in 1:ntau) {
         tau <- tau.seq[i]
         for (j in 1:length(test.set)) {
             y.j <- y[train.set[[j]]]
-            X.j <- X[train.set[[j]], ]
+            X.j <- x[train.set[[j]], ]
 
             yp <- matrix(y[test.set[[j]]], length(test.set[[j]]), 1)
-            Xp <- X[test.set[[j]], ]
+            Xp <- x[test.set[[j]], ]
 
             # Implementation of l2-relaxation with tau
             sigma_mat_j  <- est_sigma_mat(y.j, X.j)
-            w_hat <- l2_relax_comb_opt(y.j, X.j, tau, solver, tol)
+            w_hat <- l2_relax_comb_opt(sigma_mat_j, tau, solver, tol)
             y_hat <- Xp %*% w_hat
-            MSE[i] <- MSE[i] + colMeans((yp - y.hat)^2)
+            MSE[i] <- MSE[i] + colMeans((yp - y_hat)^2)
         }
     }
 

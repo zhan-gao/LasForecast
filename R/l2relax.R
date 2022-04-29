@@ -1,6 +1,6 @@
-#' Solve L2-relaxation primal problem 
-#' Details refer to Shi, Su and Xie (2022) 
-#'   "l_2-relaxation: 
+#' Solve L2-relaxation primal problem
+#' Details refer to Shi, Su and Xie (2022)
+#'   "l_2-relaxation:
 #'      With applications to forecast combination and portfolio analysis"
 #' @import CVXR
 #'
@@ -16,7 +16,7 @@
 #'
 
 l2_relax_comb_opt <- function(sigma_mat, tau, solver = "CVXR",
-                              tol = 1e-8, maxiter = 1000) {
+                              tol = 1e-8) {
     n <- ncol(sigma_mat) # number of forecasts to be combined
 
     if (solver == "Rmosek") {
@@ -76,8 +76,7 @@ l2_relax_comb_opt <- function(sigma_mat, tau, solver = "CVXR",
             A = prob_data$data[["A"]],
             b = prob_data$data[["b"]],
             control = ECOSolveR::ecos.control(
-                reltol = tol,
-                maxit = maxiter
+                reltol = tol
             )
         )
         result <- unpack_results(
@@ -97,8 +96,8 @@ l2_relax_comb_opt <- function(sigma_mat, tau, solver = "CVXR",
 #' l2-relaxation forecast combination
 #' A wrapper function with parameter tuning and estimation.
 #'
-#' Details refer to Shi, Su and Xie (2022) 
-#'   "l_2-relaxation: 
+#' Details refer to Shi, Su and Xie (2022)
+#'   "l_2-relaxation:
 #'      With applications to forecast combination and portfolio analysis"
 #'
 #' @import CVXR
@@ -114,7 +113,7 @@ l2_relax_comb_opt <- function(sigma_mat, tau, solver = "CVXR",
 #' @export
 #'
 
-l2_relax <- function(y, x, tau, solver = "CVXR", tol = 1e-7) {
+l2_relax <- function(y, x, tau, solver = "CVXR", tol = 1e-8) {
     if (length(tau) == 1) {
         tau_hat <- tau
     } else {
@@ -127,19 +126,19 @@ l2_relax <- function(y, x, tau, solver = "CVXR", tol = 1e-7) {
 }
 
 #' Estimate the sample covariance matrix
-#' 
+#'
 #' Consider different methods later on.
-#' 
+#'
 #' @param y forecast target
 #' @param x forecasts to be combined
-#' 
+#'
 #' @return sigma_mat: The estimated sample covariance matrix
-#' 
+#'
 #' @export
-#' 
+#'
 est_sigma_mat <- function(y, x) {
     n <- ncol(x)
-    TT <- nrow(y)
+    TT <- nrow(x)
     e <- matrix(y, TT, n) - x
     e_demean <- e - matrix(colMeans(e), TT, n, byrow = TRUE)
     sigma_mat <- crossprod(e_demean) / TT
