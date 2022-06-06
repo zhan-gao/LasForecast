@@ -438,6 +438,8 @@ find_tau_max  <- function(sigma_mat) {
 #'
 #'
 #' @return besttune
+#'
+#' @export
 
 train_l2_relax <- function(y, x,  m = 5, tau.seq = NULL, ntau = 100, tau.min.ratio = 0.01,
                   train_method = "oos", solver = "Rmosek", tol = 1e-5) {

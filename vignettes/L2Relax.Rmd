@@ -1,0 +1,124 @@
+---
+title: "L2Relax"
+output: rmarkdown::html_vignette
+bibliography: L2Relax.bib
+vignette: >
+  %\VignetteIndexEntry{L2Relax}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(LasForecast)
+```
+
+Forecast combination @bates1969combination is widely used
+in practical forecasting problems. $\ell_{2}$-relaxation is an algorithm
+designed for high-dimensional forecast combinations in the presence
+of many forecasts. This vignette introduces the R implementation of
+@shi2020high's $\ell_{2}$-relaxation.
+
+
+## Introduction
+
+Let $y_{t+1}$ be an outcome variable of interest, and there are $N$
+forecasts, $\mathbf{f}_{t}:=\left\{ f_{it}\right\} _{i\in\left[N\right]},$
+available at time $t$ for\ $y_{t+1},$ where $t\in\left[T\right]:=\{1,2,...,T\}$
+and $\left[N\right]:=\{1,2,...,N\}.$ We are interested in finding
+an $N\times1$ weight vector $\mathbf{w}=(w_{1},...,w_{N})^{\prime}$
+to form a linear combination $\mathbf{w}^{\prime}\mathbf{f}_{t}$
+to minimize the mean squared forecast error (MSFE) of the estimation
+error 
+\[
+y_{t+1}-\mathbf{w}^{\prime}\mathbf{f}_{t}=\mathbf{w}^{\prime}\mathbf{e}_{t},
+\]
+where $\mathbf{e}_{t}=\left(e_{1t},\ldots,e_{Nt}\right)^{\prime}$
+with $e_{it}=y_{t+1}-f_{it}$. 
+
+Given the forecast error vector and its sample variance-covariance
+(VC) estimate $\widehat{\boldsymbol{\Sigma}}\equiv T^{-1}\sum_{t=1}^{T}\mathbf{e}_{t}\mathbf{e}_{t}^{\prime}$,
+\citet{bates1969combination} proposed the following constrained minimization
+problem 
+\begin{equation}
+\min_{\mathbf{w}\in\mathbb{R}^{N}}\,\frac{1}{2}\mathbf{w}^{\prime}\widehat{\boldsymbol{\Sigma}}\mathbf{w}\ \ \text{subject to  }\mathbf{w}^{\prime}\boldsymbol{1}_{N}=1.\label{eq:bates-granger}
+\end{equation}
+where $\boldsymbol{1}_{N}$ is an $N\times1$ vector of ones. Denote
+the solution to the above constrained optimization problem as $\widehat{\mathbf{w}}^{\mathrm{\mathrm{BG}}}$.
+When $\widehat{\boldsymbol{\Sigma}}$ is invertible, we can explicitly
+solve the problem to obtain the optimal solution $\widehat{\mathbf{w}}^{\mathrm{\mathrm{BG}}}=\left(\boldsymbol{1}_{N}^{\prime}\widehat{\boldsymbol{\Sigma}}^{-1}\boldsymbol{1}_{N}\right)^{-1}\widehat{\boldsymbol{\Sigma}}^{-1}\boldsymbol{1}_{N}.$
+The requirement of the invertibility of $\widehat{\boldsymbol{\Sigma}}$
+is not guaranteed in high dimensional settings, and in fact $\widehat{\boldsymbol{\Sigma}}$
+is always singular if $N>T.$
+
+## $\ell_{2}$-relaxation
+
+The $\ell_{2}$\textit{-relaxation primal problem} is the following
+constrained quadratic form optimization 
+\begin{equation}
+\min_{\left(\mathbf{w},\gamma\right)\in\mathbb{R}^{N+1}}\ \frac{1}{2}\left\Vert \mathbf{w}\right\Vert _{2}^{2}\text{ subject to }\mathbf{w}^{\prime}\boldsymbol{1}_{N}=1\ \text{and }\Vert\widehat{\boldsymbol{\Sigma}}\mathbf{w}+\gamma\boldsymbol{1}_{N}\Vert_{\infty}\leq\tau, 
+\end{equation}
+
+where $\tau$ is a tuning parameter to be specified by the user. Denote
+the solution as $\widehat{\mathbf{w}}$. 
+
+## Implementation
+
+We use a sub-sample of @welch2008comprehensive data as an example.
+``` {r}
+# Read the test data
+data("test_data")
+y <- as.matrix(test_data[, 1])
+x <- as.matrix(test_data[, -1])
+```
+To construct the forecasts $\mathbf{f}_t$, we run complete subset regression for a given $k$ [@elliott2013complete] first. 
+```{r}
+csr_res <- csr(y, x, k = 2, intercept = TRUE)
+f <- csr_res$Y.hat
+```
+Then we can estimate the sample variance-covariance
+(VC) matrix $\widehat{\boldsymbol{\Sigma}}\equiv T^{-1}\sum_{t=1}^{T}\mathbf{e}_{t}\mathbf{e}_{t}^{\prime}$ by 
+```{r}
+sigma_mat <- est_sigma_mat(y, f)
+``` 
+
+For the tuning parameter, the cross-validation procedure is close to what the `glmnet` package does for Lasso. They start with the smallest tuning parameter $\lambda$ such that all coefficients are shrunk to 0 and use a given `lambda.min.ratio`, to determine the candidate sequence of tuning parameters. Similarly for $\ell_2$-relaxation, we pin down the smallest $\tau$ such that the equal weights solve the optimization problem, denoted as $\tau^\ast$, and then generate a geometric sequence of $\tau$s with the smallest candidate parameter as $\tau^\ast$ multiplying a ratio `tau.min.ratio`. $\tau^\ast$ can be calculated by the following explicit formula. Let $\tilde{w} = \boldsymbol{1}_N / N$, then
+\begin{equation}
+    \tau^\ast = \left\Vert 
+        \hat{\Sigma}\tilde{w} - \gamma^{\ast}\boldsymbol{1}_N
+    \right\Vert_\infty,
+\end{equation}
+where \begin{equation}
+    \gamma^\ast = \frac{1}{2} \left( 
+        \max_j\left\{ \left( \hat{\Sigma}\tilde{w} \right)_j \right\} 
+        + \min_j\left\{ \left( \hat{\Sigma}\tilde{w} \right)_j \right\}
+     \right).
+\end{equation}
+```{r}
+tau_max <- find_tau_max(sigma_mat)
+```
+The cross-validation procedure can be implemented as following.
+```{r, warning=FALSE}
+tau_opt <- train_l2_relax(
+    y,
+    f,
+    m = 5, #number of folds for cross-validation
+    tau.seq = NULL,
+    ntau = 100,
+    tau.min.ratio = 0.01,
+    train_method = "oos", # Cross-validation methods
+    solver = "Rmosek", # Rmosek or CVXR
+    tol = 1e-8
+)
+```
+Finally we solve the primal problem of $\ell_2$-relaxation to get the estimated weights.
+```{r}
+w_hat <- l2_relax_comb_opt(sigma_mat, tau_opt, solver = "Rmosek", tol = 1e-8)
+```
+## References
