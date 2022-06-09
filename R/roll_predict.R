@@ -20,11 +20,11 @@ roll_predict <- function(x, y, roll_window, h = 1, methods_use = c("RW",
                                                                    "Lasso",
                                                                    "Lasso_Std",
                                                                    "ALasso",
-                                                                   "RepLasso",
+                                                                   "TALasso",
                                                                    "post_Lasso",
                                                                    "post_Lasso_Std",
                                                                    "post_ALasso",
-                                                                   "post_RepLasso",
+                                                                   "post_TALasso",
                                                                    "bss"),
                          train_method_las = "cv", verb = TRUE, ar_order = 0){
 
@@ -220,28 +220,28 @@ roll_predict <- function(x, y, roll_window, h = 1, methods_use = c("RW",
 
         }
 
-        # ---------------- RepLasso ----------------
+        # ---------------- TALasso ----------------
 
-        if("RepLasso" %in% methods_use){
+        if("TALasso" %in% methods_use){
 
-            lambda_rep <- train_replasso(x_est,
+            lambda_ta <- train_talasso(x_est,
                                          y_est,
                                          coef_ada[-1],
                                          intercept = TRUE,
                                          scalex = FALSE,
                                          train_method = train_method_las)
 
-            result <- replasso(x_est,
+            result <- talasso(x_est,
                               y_est,
                               coef_ada[-1],
-                              lambda = lambda_rep)
+                              lambda = lambda_ta)
 
-            coef_rep <- c(as.numeric(result$ahat), as.numeric(result$bhat))
+            coef_ta <- c(as.numeric(result$ahat), as.numeric(result$bhat))
 
-            save_result$RepLasso$y_hat[tt] <- sum(c(1, x_for) * coef_rep)
-            save_result$RepLasso$beta_hat[tt, ] <- result$bhat
-            save_result$RepLasso$tuning_param[tt] <- lambda_rep
-            save_result$RepLasso$df[tt] <- sum(coef_rep[-1] != 0)
+            save_result$TALasso$y_hat[tt] <- sum(c(1, x_for) * coef_ta)
+            save_result$TALasso$beta_hat[tt, ] <- result$bhat
+            save_result$TALasso$tuning_param[tt] <- lambda_ta
+            save_result$TALasso$df[tt] <- sum(coef_ta[-1] != 0)
 
         }
 
@@ -280,12 +280,12 @@ roll_predict <- function(x, y, roll_window, h = 1, methods_use = c("RW",
 
         # ---------------- Post RepLasso ----------------
 
-        if("post_RepLasso" %in% methods_use){
+        if("post_TALasso" %in% methods_use){
 
-            coef_rep_post <- post_lasso(x_est, y_est, coef_rep)
+            coef_ta_post <- post_lasso(x_est, y_est, coef_ta)
 
-            save_result$post_RepLasso$y_hat[tt] <- sum(c(1, x_for) * coef_rep_post)
-            save_result$post_RepLasso$beta_hat[tt, ] <- coef_rep_post[-1]
+            save_result$post_TALasso$y_hat[tt] <- sum(c(1, x_for) * coef_ta_post)
+            save_result$post_TALasso$beta_hat[tt, ] <- coef_ta_post[-1]
         }
 
         if("bss" %in% methods_use){

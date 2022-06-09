@@ -212,21 +212,22 @@ train_lasso <- function(x,
 #' @export
 #'
 #' @examples
-#' train_replasso(x,y)
-train_replasso <- function(x,
-                           y,
-                           b_first,
-                           gamma = 1,
-                           intercept = TRUE,
-                           scalex = FALSE,
-                           train_method = "timeslice",
-                           lambda_seq = NULL,
-                           nlambda = 100,
-                           lambda_min_ratio = 0.0001,
-                           k = 10,
-                           initial_window = ceiling(nrow(x)*0.7),
-                           horizon = 1,
-                           fixed_window = TRUE){
+#' train_talasso(x,y)
+train_talasso <- function(x,
+                          y,
+                          b_first,
+                          gamma = 1,
+                          intercept = TRUE,
+                          scalex = FALSE,
+                          train_method = "timeslice",
+                          lambda_seq = NULL,
+                          nlambda = 100,
+                          lambda_min_ratio = 0.0001,
+                          k = 10,
+                          initial_window = ceiling(nrow(x) * 0.7),
+                          horizon = 1,
+                          fixed_window = TRUE) {
+
 
     n <- nrow(x)
     p <- ncol(x)

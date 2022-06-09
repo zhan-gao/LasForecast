@@ -9,8 +9,8 @@ roll_predict(
   y,
   roll_window,
   h = 1,
-  methods_use = c("RW", "RWwD", "OLS", "Lasso", "Lasso_Std", "ALasso", "RepLasso",
-    "post_Lasso", "post_Lasso_Std", "post_ALasso", "post_RepLasso", "bss"),
+  methods_use = c("RW", "RWwD", "OLS", "Lasso", "Lasso_Std", "ALasso", "TALasso",
+    "post_Lasso", "post_Lasso_Std", "post_ALasso", "post_TALasso", "bss"),
   train_method_las = "cv",
   verb = TRUE,
   ar_order = 0

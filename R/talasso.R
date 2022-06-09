@@ -13,15 +13,16 @@
 #' @export
 #'
 #' @examples
-#' replasso(x,y, b.first,lambda)
+#' talasso(x,y, b.first,lambda)
 
-replasso <- function(x,
-                     y,
-                     b.first,
-                     lambda,
-                     gamma = 1,
-                     intercept = TRUE,
-                     scalex = FALSE) {
+talasso <- function(x,
+                    y,
+                    b.first,
+                    lambda,
+                    gamma = 1,
+                    intercept = TRUE,
+                    scalex = FALSE) {
+
 
     p <- ncol(x)
 
