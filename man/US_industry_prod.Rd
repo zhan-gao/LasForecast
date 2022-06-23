@@ -16,13 +16,13 @@ A data frame with 748 rows and 110 variables:
 \source{
 Industrial Production Index \url{https://fred.stlouisfed.org/series/INDPRO}
 
-Remaining Macroeconomic Factors \url{https://research.stlouisfed.org/econ/mccracken/fred-databases/}
+Other Macroeconomic Factors \url{https://research.stlouisfed.org/econ/mccracken/fred-databases/}
 }
 \usage{
 US_industry_prod
 }
 \description{
-A monthly dataset containing the growth rate of US industrial production
-and other macroeconomic variables from 1960-01-01 to 2022-04-01
+A monthly dataset containing the growth rate of US Industrial Production Index
+and other macroeconomic variables from 1960-01-01 to 2022-04-01.
 }
 \keyword{datasets}
