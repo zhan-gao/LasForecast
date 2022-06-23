@@ -15,7 +15,7 @@ The package covers the following methods.
 
 The package exploits the advantage of well-established packages like `glmnet` and model training framework `caret`. 
 
-We can run backtesting and compare the forecasting performance among diiferent methods based on rolling windows and forecasting horizons using the `roll_predict` function. For example, we can replicate the empirical results in [Lee, She and Gao (2022)](https://www.sciencedirect.com/science/article/pii/S030440762100049X) as in https://github.com/zhan-gao/Alasso_Predictive_Regression/blob/master/Welch_Goyal/master_rolling.R.
+We can run backtesting and compare the forecasting performance among diiferent methods based on rolling windows and forecasting horizons using the `roll_predict` function. For example, we can replicate the empirical results in [Lee, Shi and Gao (2022)](https://www.sciencedirect.com/science/article/pii/S030440762100049X) as in https://github.com/zhan-gao/Alasso_Predictive_Regression/blob/master/Welch_Goyal/master_rolling.R.
 
 ### Installation
 ```r
