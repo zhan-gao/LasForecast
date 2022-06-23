@@ -3,7 +3,7 @@
 \docType{data}
 \name{US_industry_prod}
 \alias{US_industry_prod}
-\title{Growth Rate of US industry Production Growth.}
+\title{Growth Rate of US industrial Production Index.}
 \format{
 A data frame with 748 rows and 110 variables:
 \describe{
@@ -22,7 +22,7 @@ Remaining Macroeconomic Factors \url{https://research.stlouisfed.org/econ/mccrac
 US_industry_prod
 }
 \description{
-A monthly dataset containing the growth rate of US industry production growth rate
+A monthly dataset containing the growth rate of US industrial production
 and other macroeconomic variables from 1960-01-01 to 2022-04-01
 }
 \keyword{datasets}

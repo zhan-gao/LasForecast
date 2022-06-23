@@ -1,6 +1,6 @@
-#' Growth Rate of US industry Production Growth.
+#' Growth Rate of US industrial Production Index.
 #'
-#' A monthly dataset containing the growth rate of US industry production growth rate
+#' A monthly dataset containing the growth rate of US industrial production
 #' and other macroeconomic variables from 1960-01-01 to 2022-04-01
 #'
 #' @format A data frame with 748 rows and 110 variables:
