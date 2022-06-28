@@ -504,3 +504,99 @@ train_l2_relax <- function(y, x,  m = 5, tau.seq = NULL, ntau = 100, tau.min.rat
 
     return(tau.opt)
 }
+
+
+
+
+
+
+
+
+# ------ L2 Relaxation Regression Version ---------
+
+#' Find the minimum tau such that equal weight solve the l_2 relaxation problem
+#'
+#' @param y
+#' @param X
+#' @param intercept
+#' @param solver The solver to use; "Rmosek" or "CVXR"
+#' @param tol Tolerance for the solver
+#'
+#' @export
+
+find_tau_max_reg <- function(y, X, solver = "CVXR",
+                             intercept = TRUE, tol = 1e-6) {
+    # Find the minimum tau such that equal weight solve the l_2 relaxation problem
+    # which is the upper bound of {tau>0 | constr in the l_2 relaxation prblem is binding}
+
+    # Solve min_{tau,alpha,lambda} t s.t.
+    #   ||X'(y-alpha-Xw_tilde)-lambda||_infty <= t*rate*sd(X)
+    #   alpha = 0 if intercept = F
+
+    N = nrow(X)
+    K = ncol(X)
+
+    bd = apply(X, 2, sd) * sqrt(log(K) / N)
+    B = t(X)%*%X%*%rep(1/K, K) - t(X)%*%y
+
+    if (solver == "Rmosek") {
+
+        prob = list(sense = "min")
+        prob$dparam$intpnt_nl_tol_rel_gap = tol
+
+        if(intercept){
+            # variable order: t, alpha, lambda
+            prob$c = c(1,0,0)
+
+            A = rbind(
+                cbind(bd, -t(X)%*%rep(1,N), -rep(1,K)),
+                cbind(bd, t(X)%*%rep(1,N), rep(1,K))
+            )
+            prob$A = as(A, "CsparseMatrix")
+            prob$bc = rbind( blc = c(B, -B) ,
+                             buc = rep(Inf, 2*K))
+            prob$bx = rbind( blx = c(0, -Inf, -Inf),
+                             buc = rep(Inf, 3))
+
+        }else{
+            # variable order: t, lambda
+            prob$c = c(1,0)
+
+            A = rbind(
+                cbind(bd, -rep(1,K)),
+                cbind(bd, rep(1,K))
+            )
+            prob$A = as(A, "CsparseMatrix")
+            prob$bc = rbind( blc = c(B, -B) ,
+                             buc = rep(Inf, 2*K))
+            prob$bx = rbind( blx = c(0, -Inf),
+                             buc = rep(Inf, 2))
+        }
+
+        mosek.out = mosek(prob, opts = list(verbose = 0))
+        tau.star = mosek.out$sol$itr$xx[1]
+    } else if (solver == "CVXR") {
+        if(intercept){
+
+            v = Variable(3)
+            obj = v[1]
+            constr = list(cbind(bd, -t(X)%*%rep(1,N), -rep(1,K))%*%v >= B,
+                          cbind(bd, t(X)%*%rep(1,N), rep(1,K))%*%v >= -B)
+            prob = Problem(Minimize(obj), constraints = constr)
+            result = solve(prob)
+            tau.star = result$getValue(v)[1]
+
+        }else{
+
+            v = Variable(2)
+            obj = v[1]
+            constr = list(cbind(bd,  -rep(1,K))%*%v >= B,
+                          cbind(bd,  rep(1,K))%*%v >= -B)
+            prob = Problem(Minimize(obj), constraints = constr)
+            result = solve(prob)
+            tau.star = result$getValue(v)[1]
+        }
+    }
+    return(tau.star)
+}
+

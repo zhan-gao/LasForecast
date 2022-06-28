@@ -144,3 +144,143 @@ est_sigma_mat <- function(y, x) {
     sigma_mat <- crossprod(e_demean) / TT
     return(sigma_mat)
 }
+
+# --------- Regression Version --------
+
+
+#' Solve L2-relaxation for a regression problem
+#'
+#' @param y
+#' @param X
+#' @param tau The regularization parameter
+#' @param intercept
+#' @param solver The solver to use; "Rmosek" or "CVXR"
+#' @param tol Tolerance for the solver
+#'
+#'
+#' @export
+#'
+#'
+l2_relax_reg_opt <- function (y, X, tau,
+                              intercept = TRUE,
+                              solver = "CVXR",
+                              tol = 1e-6) {
+
+    # The workhorse function implementing the key optimization step
+
+    # Solves the l_2 relaxation optimization problem
+    # min 1/2 ||w||_2^2
+    # s.t ||X'(y-alpha-Xw) - lambda ||_infty \leq tau * rate* sd(X)
+    #     sum w_i = 1
+    # alpha = 0 if no intercept.
+
+
+
+    K = ncol(X)
+    N = nrow(X)
+
+    bd = tau * sqrt(log(K)/N) * apply(X,2,sd)
+    xy = t(X)%*%y
+
+    if (solver == "Rmosek") {
+        prob = list(sense = "min")
+        prob$dparam$intpnt_nl_tol_rel_gap = tol
+
+        if(intercept){
+
+            # varible order: w_1, w_2, ..., w_K, alpha, lambda, t, s, r
+
+            prob$c = c( rep(0, K+2), 1/2, rep(0,2) )
+
+            A.right = rbind( c(rep(1,K), 0, 0),
+                             cbind( t(X)%*%X, t(X)%*%rep(1,N), rep(1,K) ) )
+            A.left = rbind( c(1/2, -1, 0), c(1/2, 0, -1) )
+            A = bdiag(A.right, A.left)
+            prob$A = as(A, "CsparseMatrix")
+            prob$bc = rbind( blc = c(1, xy-bd, 1/2, -1/2 ),
+                             buc = c(1, xy+bd, 1/2, -1/2 ) )
+            prob$bx = rbind( blx = c( rep(-Inf, K+2), 0, rep(-Inf,2) ),
+                             bux = rep(Inf, K+5) )
+
+            prob$cones = matrix( list( "QUAD", c(K+5, 1:K, K+4) ) )
+            rownames(prob$cones) <- c("type", "sub")
+
+            mosek.out = mosek(prob, opts = list(verbose = 0) );
+
+            xx = mosek.out$sol$itr$xx
+            w = xx[1:K]
+            a = xx[K+1]
+            status = mosek.out$sol$itr$solsta
+
+        }else{
+
+            # varible order: w_1, w_2, ..., w_K, lambda, t, s, r
+
+            prob$c = c( rep(0, K+1), 1/2, rep(0,2) )
+
+            A.right = rbind( c(rep(1,K), 0),
+                             cbind( t(X)%*%X, rep(1,K) ) )
+            A.left = rbind( c(1/2, -1, 0), c(1/2, 0, -1) )
+            A = bdiag(A.right, A.left)
+            prob$A = as(A, "CsparseMatrix")
+            prob$bc = rbind( blc = c(1, xy-bd, 1/2, -1/2 ),
+                             buc = c(1, xy+bd, 1/2, -1/2 ) )
+            prob$bx = rbind( blx = c( rep(-Inf, K+1), 0, rep(-Inf,2) ),
+                             bux = rep(Inf, K+4) )
+
+            prob$cones = matrix( list( "QUAD", c(K+4, 1:K, K+3) ) )
+            rownames(prob$cones) <- c("type", "sub")
+
+            mosek.out = mosek(prob, opts = list(verbose = 0) );
+
+            xx = mosek.out$sol$itr$xx
+            w = xx[1:K]
+            a = 0
+            status = mosek.out$sol$itr$solsta
+        }
+    }
+    else if (solver == "CVXR") {
+
+        if(intercept){
+
+            # varible order: w_1, w_2, ..., w_K, alpha, lambda
+
+            w = Variable(K)
+            alpha = Variable(1)
+            lambda = Variable(1)
+
+            Q = t(X) %*% (y - alpha*rep(1,N) - X%*%w) - lambda*rep(1,K)
+
+            obj = sum(w^2)/2
+            constr = list(sum(w) == 1,
+                          cvxr_norm(Q, "inf") <= bd)
+            prob = Problem(Minimize(obj), constraints = constr)
+            result = solve(prob)
+
+            w = as.numeric( result$getValue(w) )
+            a = result$getValue(alpha)
+            status = result$status
+
+        }else{
+
+            # varible order: w_1, w_2, ..., w_K, lambda, t, s, r
+
+            w = Variable(K)
+            lambda = Variable(1)
+
+            Q = t(X) %*% (y - X%*%w) - lambda*rep(1,K)
+
+            obj = sum(w^2)/2
+            constr = list(sum(w) == 1,
+                          cvxr_norm(Q, "inf") <= bd)
+            prob = Problem(Minimize(obj), constraints = constr)
+            result = solve(prob)
+
+            w = as.numeric( result$getValue(w) )
+            a = 0
+            status = result$status
+        }
+    }
+
+    return( list(w = w, a = a, status = status) )
+}
