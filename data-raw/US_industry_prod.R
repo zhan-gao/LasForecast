@@ -57,5 +57,11 @@ NA_num_col=apply(US_industry_prod,MARGIN=2,sum_NA)
 NA_num_col=as.numeric(as.vector(NA_num_col))
 US_industry_prod=US_industry_prod[,-which(NA_num_col>0)]
 
+#Data standardization-------------------------------------------------
+for(i in 1:ncol(US_industry_prod)){
+    US_industry_prod[,i]=US_industry_prod[,i]/sd(US_industry_prod[,i])
+}
+
+
 #Save data-----------------------------------------------------
 usethis::use_data(US_industry_prod, overwrite = TRUE)
