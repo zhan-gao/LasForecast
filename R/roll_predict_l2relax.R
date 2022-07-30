@@ -118,8 +118,8 @@ roll_predict_l2relax <- function(x,
     y_0 <- y[-(1:roll_window)]
     mse <- matrix(0, k_max, 2)
     colnames(mse) <- c("CSR", "L2Relax")
-    mse[, 1] <- col_means((save_result$y_hat_csr - y_0)^2)
-    mse[, 2] <- col_means((save_result$y_hat_l2relax - y_0)^2)
+    mse[, 1] <- colMeans((save_result$y_hat_csr - y_0)^2)
+    mse[, 2] <- colMeans((save_result$y_hat_l2relax - y_0)^2)
 
     save_result$mse <- mse
     save_result$y <- y
