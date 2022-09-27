@@ -16,6 +16,7 @@
 #' @param solver "Rmosek" or "CVXR"
 #' @param tol tolerance for the solver
 #' @param verb boolean to control whether print information on screen
+#' @param csr boolean to opt out for the csr
 #'
 #' @export
 #'
@@ -32,13 +33,18 @@ roll_predict_l2relax <- function(x,
                                  train_method = "oos",
                                  solver = "CVXR",
                                  tol = 1e-7,
-                                 verb = TRUE
+                                 verb = TRUE,
+                        				 csr = TRUE
 ) {
     x <- as.matrix(x)
     n <- nrow(x)
     p <- ncol(x)
 
     num_forecast <- n - roll_window
+    
+    if(!csr){
+      k_max = 1
+    }
 
     # Containers
     save_result <- list(
@@ -76,51 +82,80 @@ roll_predict_l2relax <- function(x,
                 i - roll_window, " / ", (num_forecast), "\n" )
         }
 
-        # Estimation.
-        for(k in 1:k_max) {
+        if(csr){
 
-            # CSR
-            csr_res <- csr(y_est, x_est, k, intercept = TRUE)
-            save_result$y_hat_csr[tt, k] <- sum(c(1, x_for) * csr_res$coef)
+            # Estimation.
+                for(k in 1:k_max) {
 
-            # L2Relax
-            x_est_l2 <- csr_res$Y.hat
-            tau_opt <- train_l2_relax(
-                y_est,
-                x_est_l2,
-                m,
-                tau.seq = NULL,
-                ntau = ntau,
-                tau.min.ratio = tau_min_ratio,
-                train_method = train_method,
-                solver = solver,
-                tol = tol
-            )
-            sigma_mat <- est_sigma_mat(y_est, x_est_l2)
-            tau_max <- find_tau_max(sigma_mat)
-            w_hat <- l2_relax_comb_opt(sigma_mat, tau_opt, solver = solver, tol = tol)
-            save_result$y_hat_l2relax[tt, k] <- as.numeric(c(1, x_for) %*% csr_res$B %*% w_hat)
-            save_result$tau_opt[tt, k] <- tau_opt
-            save_result$tau_max[tt, k] <- tau_max
+                        # CSR
+                        csr_res <- csr(y_est, x_est, k, intercept = TRUE)
+                        save_result$y_hat_csr[tt, k] <- sum(c(1, x_for) * csr_res$coef)
 
-            if (k == k_max) {
-                cat(k, "---\n")
-            } else {
-                cat(k, "---")
+                        # L2Relax
+                        x_est_l2 <- csr_res$Y.hat
+                        tau_opt <- train_l2_relax(
+                        y_est,
+                        x_est_l2,
+                        m,
+                        tau.seq = NULL,
+                        ntau = ntau,
+                        tau.min.ratio = tau_min_ratio,
+                        train_method = train_method,
+                        solver = solver,
+                        tol = tol
+                    )
+                        sigma_mat <- est_sigma_mat(y_est, x_est_l2)
+                        tau_max <- find_tau_max(sigma_mat)
+                        w_hat <- l2_relax_comb_opt(sigma_mat, tau_opt, solver = solver, tol = tol)
+                        save_result$y_hat_l2relax[tt, k] <- as.numeric(c(1, x_for) %*% csr_res$B %*% w_hat)
+                        save_result$tau_opt[tt, k] <- tau_opt
+                        save_result$tau_max[tt, k] <- tau_max
+
+                        if (k == k_max) {
+                            cat(k, "---\n")
+                        } else {
+                            cat(k, "---")
+                        }
+                }
+
+        } else {
+            
+                tau_opt <- train_l2_relax(
+                        y_est,
+                        x_est,
+                        m,
+                        tau.seq = NULL,
+                        ntau = ntau,
+                        tau.min.ratio = tau_min_ratio,
+                        train_method = train_method,
+                        solver = solver,
+                        tol = tol
+                    )
+                        sigma_mat <- est_sigma_mat(y_est, x_est)
+                        tau_max <- find_tau_max(sigma_mat)
+                        w_hat <- l2_relax_comb_opt(sigma_mat, tau_opt, solver = solver, tol = tol)
+                        save_result$y_hat_l2relax[tt] <- as.numeric(x_for %*% w_hat)
+                        save_result$tau_opt[tt] <- tau_opt
+                        save_result$tau_max[tt] <- tau_max
+
+
             }
-        }
 
         t_use <- Sys.time() - t_start
-        if(verb) print(t_use)
+            if(verb) print(t_use)
+	}
 
-    }
-
+        
     y_0 <- y[-(1:roll_window)]
-    mse <- matrix(0, k_max, 2)
-    colnames(mse) <- c("CSR", "L2Relax")
-    mse[, 1] <- colMeans((save_result$y_hat_csr - y_0)^2)
-    mse[, 2] <- colMeans((save_result$y_hat_l2relax - y_0)^2)
-
+    if (csr){
+        mse <- matrix(0, k_max, 2)
+        colnames(mse) <- c("CSR", "L2Relax")
+        mse[, 1] <- colMeans((save_result$y_hat_csr - y_0)^2)
+        mse[, 2] <- colMeans((save_result$y_hat_l2relax - y_0)^2)
+    } else {
+        mse <- colMeans((save_result$y_hat_l2relax - y_0)^2)
+    }
+    
     save_result$mse <- mse
     save_result$y <- y
     save_result$x <- x
