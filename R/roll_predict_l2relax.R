@@ -34,7 +34,7 @@ roll_predict_l2relax <- function(x,
                                  solver = "CVXR",
                                  tol = 1e-7,
                                  verb = TRUE,
-                        				 csr = TRUE
+                        	 csr = TRUE
 ) {
     x <- as.matrix(x)
     n <- nrow(x)
