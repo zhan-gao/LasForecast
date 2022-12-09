@@ -3,3 +3,6 @@
 .RData
 .Ruserdata
 inst/doc
+LasForecast.Rcheck/
+LasForecast*.tar.gz
+LasForecast*.tgz
