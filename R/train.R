@@ -184,12 +184,12 @@ train_lasso <- function(x,
 
 # -----
 
-#' Do parameter tuning for replasso
+#' Do parameter tuning for Twin Adaptive Lasso (TALasso)
 #'
 #' If all variables are killed in the first step: return a random number\cr
 #' If more than 1 variables are left: just repeat the training process for alasso\cr
 #' If only 1 variable remained: use a brute-force process do the cross-validation.\cr
-#' FOR FUTURE WORK: INCORPORATE REPLASSO INTO CARET FRAMEWORK.
+#' FOR FUTURE WORK: INCORPORATE TALASSO INTO CARET FRAMEWORK.
 #'
 #' @param x Predictor matrix (n-by-p matrix)
 #' @param y Response variable

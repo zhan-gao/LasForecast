@@ -4,7 +4,7 @@ Version: 0.0.0.9000
 Authors@R: c(
     person("Zhan", "Gao", email = "zhangao@usc.edu", role = c("aut", "cre")),
     person("Zhentao", "Shi", email = "zhentaoshi@cuhk.edu.hk", role = "aut"))
-Description: What the package does (one paragraph).
+Description: This package develops a framework for economic forecasting in a data-rich environment with a particular emphasis on linear predictive regression. The goal is to automate the processes of parameter tuning, rolling window forecasting and backtesting, and visualization in a unified framework.
 Depends: 
     R (>= 3.5.2),
     glmnet,
@@ -27,6 +27,7 @@ Suggests:
     foreach,
     dplyr,
     knitr,
-    rmarkdown
-RoxygenNote: 7.1.2
+    rmarkdown,
+    gurobi
+RoxygenNote: 7.2.1
 VignetteBuilder: knitr

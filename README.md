@@ -23,3 +23,5 @@ install.packages("devtools")
 devtools::install_github("zhan-gao/LasForecast")
 ```
 
+### Usage
+
