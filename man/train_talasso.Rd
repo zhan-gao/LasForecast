@@ -2,7 +2,7 @@
 % Please edit documentation in R/train.R
 \name{train_talasso}
 \alias{train_talasso}
-\title{Do parameter tuning for replasso}
+\title{Do parameter tuning for Twin Adaptive Lasso (TALasso)}
 \usage{
 train_talasso(
   x,
@@ -57,7 +57,7 @@ bestTune
 If all variables are killed in the first step: return a random number\cr
 If more than 1 variables are left: just repeat the training process for alasso\cr
 If only 1 variable remained: use a brute-force process do the cross-validation.\cr
-FOR FUTURE WORK: INCORPORATE REPLASSO INTO CARET FRAMEWORK.
+FOR FUTURE WORK: INCORPORATE TALASSO INTO CARET FRAMEWORK.
 }
 \examples{
 train_talasso(x,y)

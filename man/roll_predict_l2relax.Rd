@@ -16,7 +16,8 @@ roll_predict_l2relax(
   train_method = "oos",
   solver = "CVXR",
   tol = 1e-07,
-  verb = TRUE
+  verb = TRUE,
+  csr = TRUE
 )
 }
 \arguments{
@@ -39,6 +40,8 @@ roll_predict_l2relax(
 \item{tol}{tolerance for the solver}
 
 \item{verb}{boolean to control whether print information on screen}
+
+\item{csr}{boolean to opt out for the csr}
 
 \item{tau.min.ratio}{ratio of the minimum tau in tau.seq over the maximum
 (which is the smallest tau such that
