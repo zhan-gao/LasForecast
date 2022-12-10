@@ -19,3 +19,4 @@ library(LasForecast)
 ```
 
 This is a template of the vignette.
+to be completed.
