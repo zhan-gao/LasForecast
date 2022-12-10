@@ -1,4 +1,4 @@
-#' LasForecast: A package for time series forecasting with Lasso-type shrinkage methods in linear models
+#' LasForecast: Time series linear predictive regression
 #'
 #'
 #' @docType package

@@ -1,5 +1,5 @@
 Package: LasForecast
-Title: Time series forecasting with Lasso-type shrinkage methods in linear models
+Title: Time series linear predictive regression
 Version: 0.0.0.9000
 Authors@R: c(
     person("Zhan", "Gao", email = "zhangao@usc.edu", role = c("aut", "cre")),
