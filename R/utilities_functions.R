@@ -29,6 +29,18 @@ sd_n <- function(x){
     sqrt(sum((x - mean(x))^2)/length(x))
 }
 
+
+#' Get the maximum lambda value for lasso
+#' 
+#' @param x
+#' @param y
+#' @param scalex
+#' @param nlambda
+#' @param lambda_min_ratio
+#' 
+#' @return lambda_max
+#' 
+#' @export
 get_lasso_lambda_max <- function(x, y, scalex = FALSE, nlambda = 100, lambda_min_ratio = 0.0001){
 
     n <- nrow(x)
@@ -48,6 +60,17 @@ get_lasso_lambda_max <- function(x, y, scalex = FALSE, nlambda = 100, lambda_min
 
 }
 
+
+#' Get the lambda sequence
+#' 
+#' @param lambda_max
+#' @param lambda_min_ratio
+#' @param nlambda
+#' 
+#' @return lambda_seq
+#' 
+#' @export
+#' 
 get_lambda_seq <- function(lambda_max, lambda_min_ratio = 0.0001, nlambda = 100){
 
     lambda_min <- lambda_min_ratio * lambda_max
@@ -55,6 +78,8 @@ get_lambda_seq <- function(lambda_max, lambda_min_ratio = 0.0001, nlambda = 100)
 
     return(lambda_seq)
 }
+
+
 
 
 # An auxiliary function for coordinate descent algorithm
