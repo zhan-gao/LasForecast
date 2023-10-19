@@ -81,19 +81,23 @@ train_lasso <- function(
                       scalex = scalex)
     }
 
+    glmnet_args <- list(
+        x = x,
+        y = y,
+        lambda = lambda_seq,
+        intercept = intercept,
+        standardize = scalex,
+        nfolds = k
+    )
+    if(ada){
+        glmnet_args$penalty.factor = w
+        glmnet_args$lambda <- lambda_seq * sum(w) / p
+    }
 
     if(train_method %in% c("cv", "cv_random")){
 
-        glmnet_args <- list(x = x,
-                            y = y,
-                            intercept = intercept,
-                            standardize = scalex)
         if (train_method == "cv") {
             glmnet_arg$foldid = foldid_vec(n, k = k)
-        }
-        if(ada){
-            glmnet_args$penalty.factor = w
-            glmnet_args$lambda <- lambda_seq * sum(w) / p
         }
 
         cv_las <- do.call(glmnet::cv.glmnet, glmnet_args)
@@ -106,17 +110,6 @@ train_lasso <- function(
         }
 
     } else if (train_method %in% c("aic", "bic", "aicc", "hqc")){
-
-        glmnet_args <- list(x = x,
-                            y = y,
-                            lambda = lambda_seq,
-                            intercept = intercept,
-                            standardize = scalex)
-
-        if (ada){
-            glmnet_args$penalty.factor = w
-            glmnet_args$lambda <- lambda_seq * sum(w) / p
-        }
 
         glm_est <- do.call(glmnet::glmnet, glmnet_args)
 
