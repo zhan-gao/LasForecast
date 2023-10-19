@@ -18,7 +18,8 @@ train_lasso(
   k = 10,
   initial_window = ceiling(nrow(x) * 0.7),
   horizon = 1,
-  fixed_window = TRUE
+  fixed_window = TRUE,
+  skip = 0
 )
 }
 \arguments{
@@ -36,7 +37,14 @@ train_lasso(
 
 \item{lambda_seq}{Candidate sequnece of parameters. If NULL, the function generates the sequnce.}
 
-\item{train_method}{"timeslice", "cv", "aic", "bic", "aicc", "hqc"}
+\item{train_method}{"timeslice", "cv", "cv_random", "aic", "bic", "aicc", "hqc"
+"timeslice": https://topepo.github.io/caret/data-splitting.html#time
+    By combining initial window, horizon, fixed window and skip, we can control the sample splitting.
+    Roll_block: Setting initial_window = horizon = floor(nrow(x) / k), fixed_window = False, and skip = floor(nrow(x) / k) - 1
+    Period-by-period rolling: skip = 0. 
+"cv": Cross-validation based on block splits.
+"cv_random": Cross-validition based on random splits.
+"aic", "bic", "aicc", "hqc": based on information criterion.}
 
 \item{nlambda}{# of lambdas}
 
@@ -49,6 +57,8 @@ train_lasso(
 \item{horizon}{control "timeslice"}
 
 \item{fixed_window}{control "timeslice"}
+
+\item{skip}{control "timeslice"}
 }
 \value{
 bestTune

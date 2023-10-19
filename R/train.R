@@ -8,13 +8,21 @@
 #' @param intercept A boolean: include an intercept term or not
 #' @param scalex A boolean: standardize the design matrix or not
 #' @param lambda_seq Candidate sequnece of parameters. If NULL, the function generates the sequnce.
-#' @param train_method "timeslice", "cv", "aic", "bic", "aicc", "hqc"
+#' @param train_method "timeslice", "cv", "cv_random", "aic", "bic", "aicc", "hqc"
+#'      "timeslice": https://topepo.github.io/caret/data-splitting.html#time
+#'          By combining initial window, horizon, fixed window and skip, we can control the sample splitting.
+#'          Roll_block: Setting initial_window = horizon = floor(nrow(x) / k), fixed_window = False, and skip = floor(nrow(x) / k) - 1
+#'          Period-by-period rolling: skip = 0. 
+#'      "cv": Cross-validation based on block splits.
+#'      "cv_random": Cross-validition based on random splits.
+#'      "aic", "bic", "aicc", "hqc": based on information criterion.
 #' @param nlambda # of lambdas
 #' @param lambda_min_ratio # lambda_min_ratio * lambda_max = lambda_min
 #' @param k k-fold cv if "cv" is chosen
 #' @param initial_window control "timeslice"
 #' @param horizon control "timeslice"
 #' @param fixed_window control "timeslice"
+#' @param skip control "timeslice"
 #'
 #' @return bestTune
 #'
@@ -22,34 +30,40 @@
 #'
 #' @examples
 #' train_lasso(x,y)
-train_lasso <- function(x,
-                        y,
-                        ada = TRUE,
-                        gamma = 1,
-                        intercept = TRUE,
-                        scalex = FALSE,
-                        lambda_seq = NULL,
-                        train_method = "timeslice",
-                        nlambda = 100,
-                        lambda_min_ratio = 0.0001,
-                        k = 10,
-                        initial_window = ceiling(nrow(x)*0.7),
-                        horizon = 1,
-                        fixed_window = TRUE) {
+train_lasso <- function(
+    x,
+    y,
+    ada = TRUE,
+    gamma = 1,
+    intercept = TRUE,
+    scalex = FALSE,
+    lambda_seq = NULL,
+    train_method = "timeslice",
+    nlambda = 100,
+    lambda_min_ratio = 0.0001,
+    k = 10,
+    initial_window = ceiling(nrow(x)*0.7),
+    horizon = 1,
+    fixed_window = TRUE,
+    skip = 0
+) {
     n <- nrow(x)
     p <- ncol(x)
 
-    if( is.null(lambda_seq) ){
-
+    if (is.null(lambda_seq)) {
         lambda_max_lasso <- get_lasso_lambda_max(x,
-                                                 y,
-                                                 scalex = scalex,
-                                                 nlambda = nlambda,
-                                                 lambda_min_ratio = lambda_min_ratio)
+            y,
+            scalex = scalex,
+            nlambda = nlambda,
+            lambda_min_ratio = lambda_min_ratio
+        )
 
-        if(ada){
-            if(intercept) coef_max <- max( abs( lsfit(x, y)$coefficients[-1] ) )
-            else coef_max <- max(abs( lsfit(x, y, intercept = intercept) ))
+        if (ada) {
+            if (intercept) {
+                coef_max <- max(abs(lsfit(x, y)$coefficients[-1]))
+            } else {
+                coef_max <- max(abs(lsfit(x, y, intercept = intercept)))
+            }
             lambda_max <- coef_max * lambda_max_lasso
         } else {
             lambda_max <- lambda_max_lasso
@@ -58,7 +72,7 @@ train_lasso <- function(x,
         lambda_seq <- get_lambda_seq(lambda_max, lambda_min_ratio = lambda_min_ratio, nlambda = nlambda)
     }
 
-    if(ada){
+    if (ada) {
         w <- init_est(x,
                       y,
                       lambda_lasso = NULL,
@@ -68,13 +82,15 @@ train_lasso <- function(x,
     }
 
 
-    if(train_method == "cv"){
+    if(train_method %in% c("cv", "cv_random")){
 
         glmnet_args <- list(x = x,
                             y = y,
-                            foldid = foldid_vec(n, k = k),
                             intercept = intercept,
                             standardize = scalex)
+        if (train_method == "cv") {
+            glmnet_arg$foldid = foldid_vec(n, k = k)
+        }
         if(ada){
             glmnet_args$penalty.factor = w
             glmnet_args$lambda <- lambda_seq * sum(w) / p
@@ -133,12 +149,13 @@ train_lasso <- function(x,
         }
 
 
-    }else if (train_method == "timeslice") {
+    } else if (train_method == "timeslice") {
 
         train_control <- caret::trainControl(method = "timeslice",
                                              initialWindow = initial_window,
                                              horizon = horizon,
-                                             fixedWindow = fixed_window)
+                                             fixedWindow = fixed_window,
+                                             skip = skip)
 
         if(ada){
             glm_grid <- expand.grid(alpha = 1, lambda = lambda_seq * sum(w) / p)
@@ -172,14 +189,32 @@ train_lasso <- function(x,
         } else {
             return(glm_train_fit$bestTune$lambda)
         }
-
-
     } else {
-
         stop("Invalid train_method input.")
         NULL
     }
+}
 
+foldid_vec <- function(TT, k) {
+
+    # generate folder id vector for cross-validation
+    # input as foldid argument in glmnet
+
+    # INPUTS: TT: number of observations k: number of folds
+    # OUTPUIS:
+    # id: a vector of length TT
+
+    # Eg: TT = 100, k = 5 id = c(1,1,...,1, 2,2,...,2, 3,3,...,3,
+    # 4,4,...,4, 5,5,...,5)
+
+    seq.interval = split(1:TT, ceiling(seq_along(1:TT)/(TT/k)))
+
+    id = rep(0, TT)
+    for (j in 1:k) {
+        id[seq.interval[[j]]] = j
+    }
+
+    return(id)
 }
 
 # -----
@@ -206,6 +241,7 @@ train_lasso <- function(x,
 #' @param initial_window control "timeslice"
 #' @param horizon control "timeslice"
 #' @param fixed_window control "timeslice"
+#' @param skip control "timeslice"
 #'
 #' @return bestTune
 #'
@@ -226,7 +262,8 @@ train_talasso <- function(x,
                           k = 10,
                           initial_window = ceiling(nrow(x) * 0.7),
                           horizon = 1,
-                          fixed_window = TRUE) {
+                          fixed_window = TRUE,
+                          skip = 0) {
 
 
     n <- nrow(x)
@@ -271,6 +308,9 @@ train_talasso <- function(x,
 
         }
 
+        
+        # Case 1: "cv" and "timeslice" (Need cross-validation and sample splitting).
+        # Case 2: "*ic" (No sample split.)
         if (train_method %in% c("cv", "timeslice")) {
 
             if (train_method == "cv"){
@@ -290,7 +330,8 @@ train_talasso <- function(x,
                 data_split <- caret::createTimeSlices(y,
                                                       initialWindow = initial_window,
                                                       horizon = horizon,
-                                                      fixedWindow = fixed_window)
+                                                      fixedWindow = fixed_window,
+                                                      skip = skip)
             }
 
             MSE = rep(0, length(lambda_seq))
@@ -399,6 +440,10 @@ train_talasso <- function(x,
 
 
 
+# -----------------------------------------------------------------
+# L2-Relaxation
+# -----------------------------------------------------------------
+
 
 #' Find the largest tau for L2-Relaxation
 #'
@@ -504,13 +549,6 @@ train_l2_relax <- function(y, x,  m = 5, tau.seq = NULL, ntau = 100, tau.min.rat
 
     return(tau.opt)
 }
-
-
-
-
-
-
-
 
 # ------ L2 Relaxation Regression Version ---------
 

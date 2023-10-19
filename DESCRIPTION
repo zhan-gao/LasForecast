@@ -29,5 +29,5 @@ Suggests:
     knitr,
     rmarkdown,
     gurobi
-RoxygenNote: 7.2.1
+RoxygenNote: 7.2.3
 VignetteBuilder: knitr

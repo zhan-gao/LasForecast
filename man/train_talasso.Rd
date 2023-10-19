@@ -18,7 +18,8 @@ train_talasso(
   k = 10,
   initial_window = ceiling(nrow(x) * 0.7),
   horizon = 1,
-  fixed_window = TRUE
+  fixed_window = TRUE,
+  skip = 0
 )
 }
 \arguments{
@@ -49,6 +50,8 @@ train_talasso(
 \item{horizon}{control "timeslice"}
 
 \item{fixed_window}{control "timeslice"}
+
+\item{skip}{control "timeslice"}
 }
 \value{
 bestTune
