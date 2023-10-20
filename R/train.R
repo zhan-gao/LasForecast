@@ -97,7 +97,7 @@ train_lasso <- function(
     if(train_method %in% c("cv", "cv_random")){
 
         if (train_method == "cv") {
-            glmnet_arg$foldid = foldid_vec(n, k = k)
+            glmnet_args$foldid = foldid_vec(n, k = k)
         }
 
         cv_las <- do.call(glmnet::cv.glmnet, glmnet_args)
