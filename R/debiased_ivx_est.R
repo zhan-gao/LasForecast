@@ -1,0 +1,213 @@
+# Main function for debiased IVX estimator
+
+#' Debiased IVX for predictive regression 
+#' 
+#' \deqn{y_t = w_{t-1} theta + u_t} where data is already aligned to incorporate the lagged regressor
+#'
+#' @param w Matrix of all regressors
+#' @param y Vector of dependent variable
+#' @param d_ind Index for inference targets
+#' @param intercept Whether to include intercept in Lasso regression
+#' @param standardize
+#' @param c_z Parameter in constructing IV (Phillips and Lee, 2016) \deqn{z = \sum_{j=0}^{n-1} (1 - c_z / n^a)^j \Delta d_{t-j}}
+#' @param a Parameter in constructing IV (Phillips and Lee, 2016)
+#' @param theta_0 Null hypothesis of delta; same length as d_ind
+#' @param iid boolean indicating whether we want to adjust the long-run variance
+#' @param lambda_choice Choice of lambda for Lasso regression; Of length length(d_ind) + 1;\neq NULL if user has a specific set of lambda
+#' @param train_method The parameter tuning method
+#'     \itemize{
+#'      \item{"timeslice"}{https://topepo.github.io/caret/data-splitting.html#time}:
+#'          By combining initial window, horizon, fixed window and skip, we can control the sample splitting.
+#'          Roll_block: Setting initial_window = horizon = floor(nrow(x) / k), fixed_window = False, and skip = floor(nrow(x) / k) - 1
+#'          Period-by-period rolling: skip = 0. 
+#'      \item "cv": Cross-validation based on block splits.
+#'      \item "cv_random": Cross-validition based on random splits.
+#'      \item "aic", "bic", "aicc", "hqc": based on information criterion.
+#'      }
+#' @param nlambda number of candidate lambdas
+#' @param lambda_min_ratio # lambda_min_ratio * lambda_max = lambda_min (default: 0.0001): Determines the search range of lambda
+#' @param k k-fold cv if "cv" is chosen (default: 10)
+#' @param initial_window length of initial window for "timeslice" method
+#' @param horizon length of horizon for "timeslice" method
+#' @param fixed_window whether to use fixed window for "timeslice" method
+#' @param skip length of skip for "timeslice" method
+#' @return A list contains
+#' \item{delta_hat_las}{Estimate of delta from Lasso regression}
+#' \item{delta_hat_ivx}{Estimate of delta from debiased IVX}
+#' \item{t_stat}{t-statistic of delta_hat_ivx}
+#' \item{sigma_hat}{Estimate of standard error of delta_hat_ivx}
+#'
+#' @export
+#'
+
+
+debias_ivx <- function(
+    w, y, d_ind, 
+    intercept = FALSE,
+    standardize = TRUE,
+    c_z = 5, 
+    a = 0.9, 
+    theta_0 = rep(0, length(d_ind)), 
+    iid = TRUE, 
+    sig_level = 0.05,
+    lambda_choice = vector("list", length(d_ind) + 1),
+    train_method = "timeslice",   
+    nlambda = 100,
+    lambda_min_ratio = 0.0001,
+    k = 10,
+    initial_window = ceiling(nrow(w)*0.7),
+    horizon = 1,
+    fixed_window = TRUE,
+    skip = 0
+) {
+
+    n <- length(y)
+    p_focal <- length(d_ind)
+
+    fit_lasso_args <- list(
+        intercept = intercept, standardize = standardize,
+        train_method = train_method,   
+        nlambda = nlambda,
+        lambda_min_ratio = lambda_min_ratio,
+        k = k,
+        initial_window = initial_window,
+        horizon = horizon,
+        fixed_window = fixed_window,
+        skip = skip
+    )
+
+    # Step 1: Lasso Regression y on w
+    lasso_result  <- do.call(
+        fit_lasso,
+        c(list(w = w, y = y, lambda_choice = lambda_choice[[1]]), fit_lasso_args) 
+    )
+    b_hat_las <- lasso_result$beta
+    u_hat <- as.numeric(lasso_result$u)
+    theta_hat_las <- b_hat_las[d_ind]
+
+    # Step 2: IVX
+    theta_hat_ivx <- rep(NA, p_focal)
+    sigma_hat_ivx  <- rep(NA, p_focal)
+
+    for (i in 1:p_focal) {
+        d <- w[, d_ind[i]]
+
+        delta_d <- c(0, diff(d))
+        d_mat <- toeplitz(delta_d)
+        d_mat[upper.tri(d_mat)] <- 0
+        const_mat <- (1 - (c_z / n^a))^matrix(0:(n-1), n, n, byrow = TRUE)
+        const_mat[upper.tri(const_mat)] <- 0
+        z <- rowSums(const_mat * d_mat)[-1] #Dimension of Z is n - 1
+
+        w_z <- w[-1, -d_ind[i]]
+        lasso_result <- do.call(
+            fit_lasso,
+            c(list(w = w_z, y = z, lambda_choice = lambda_choice[[i + 1]]), fit_lasso_args)
+        )
+        b_hat_las_z <- lasso_result$beta
+        r_hat <- as.numeric(lasso_result$u)
+
+        # Generate debiased estimates
+        if (iid) {
+            theta_hat_ivx[i] <- theta_hat_las[i] + (sum(r_hat * u_hat[-1]) ) / sum(r_hat * d[-1])
+        } else {
+            lrcov_du <- lrcov_est(u_hat[-1], diff(d), type = 1) # one-sided long-run covariance
+            theta_hat_ivx[i] <- theta_hat_las[i] + (sum(r_hat * u_hat[-1]) - (n * lrcov_du)) / sum(r_hat * d[-1])
+        }
+
+        # s.e. and t statistics
+        # omega_uu <- lrcov_est(u_hat, type = 0) # long-run covariance
+        omega_uu  <- mean(u_hat^2)
+        sigma_hat_ivx[i] <- sqrt(
+            (omega_uu * sum(r_hat^2)) / (sum(r_hat * d[-1])^2)
+        )
+    }
+
+    t_stat_ivx <- (theta_hat_ivx - theta_0) / sigma_hat_ivx
+
+    metrics <- list(
+        las_bias = theta_hat_las - theta_0,
+        las_sqerr = (theta_hat_las - theta_0)^2,
+        ivx_bias = theta_hat_ivx - theta_0,
+        ivx_sqerr = (theta_hat_ivx - theta_0)^2,
+        rej_h0 = (abs(theta_hat_ivx) / sigma_hat_ivx) > qnorm(1 - sig_level / 2),
+        coverage = (abs(theta_hat_ivx - theta_0) / sigma_hat_ivx) < qnorm(1 - sig_level / 2)
+    )
+
+    return(list(
+        theta_hat_las = theta_hat_las,
+        theta_hat_ivx = theta_hat_ivx,
+        t_stat_ivx= t_stat_ivx,
+        sigma_hat_ivx = sigma_hat_ivx,
+        metrics = metrics
+    ))
+}
+
+
+#' Run Lasso estimation
+#' 
+#' @param w Matrix of all regressors
+#' @param y Vector of dependent variable
+#' @param intercept
+#' @param standardize
+#' @inheritParams debias_ivx$lambda_choice
+#' @inheritParams debias_ivx$train_method
+#' @inheritParams debias_ivx$nlambda
+#' @inheritParams debias_ivx$lambda_min_ratio
+#' @inheritParams debias_ivx$k
+#' @inheritParams debias_ivx$initial_window
+#' @inheritParams debias_ivx$horizon
+#' @inheritParams debias_ivx$fixed_window
+#' @inheritParams debias_ivx$skip
+#' 
+#' @return coefficients of Lasso regression and residuals
+#' 
+
+# Rewrite the function to avoid repeition of function calling.
+fit_lasso <- function(
+    w, y, 
+    intercept = FALSE,
+    standardize = TRUE,
+    lambda_choice = NULL,
+    train_method = "timeslice",   
+    nlambda = 100,
+    lambda_min_ratio = 0.0001,
+    k = 10,
+    initial_window = ceiling(nrow(x)*0.7),
+    horizon = 1,
+    fixed_window = TRUE,
+    skip = 0
+) {
+
+    if (is.null(lambda_choice)) {
+        train_arg <- list(
+            x = w,
+            y = y,
+            ada = FALSE,
+            intercept = intercept,
+            scalex = standardize,
+            train_method = train_method,
+            nlambda = nlambda,
+            lambda_min_ratio = lambda_min_ratio,
+            k = k,
+            initial_window = initial_window,
+            horizon = horizon,
+            fixed_window = fixed_window,
+            skip = skip
+        )
+        lambda_lasso <- do.call(train_lasso, train_arg)
+    } else {
+        lambda_lasso <- lambda_choice
+    }
+    result <- glmnet::glmnet(w,
+                             y,
+                             lambda = lambda_lasso,
+                             intercept = intercept,
+                             standardize = standardize)
+    b_hat_las <- result$beta
+    u_hat <- y - w %*% b_hat_las - result$a0 # result$a0 = 0 if intercept = FALSE
+
+    return(
+        list(beta = b_hat_las, u = u_hat)
+    )
+}
