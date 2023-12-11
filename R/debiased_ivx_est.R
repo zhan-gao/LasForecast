@@ -14,6 +14,7 @@
 #' @param theta_0 Null hypothesis of delta; same length as d_ind
 #' @param iid boolean indicating whether we want to adjust the long-run variance
 #' @param lambda_choice Choice of lambda for Lasso regression; Of length length(d_ind) + 1;\neq NULL if user has a specific set of lambda
+#' @param lambda_seq pre-specified sequence of tuning parameter for parameter tuning; Useful in calibration of tuning parameter based on the rate conditions in the asymptotic theory
 #' @param train_method The parameter tuning method
 #'     \itemize{
 #'      \item{"timeslice"}{https://topepo.github.io/caret/data-splitting.html#time}:
@@ -51,6 +52,7 @@ debias_ivx <- function(
     iid = TRUE, 
     sig_level = 0.05,
     lambda_choice = vector("list", length(d_ind) + 1),
+    lambda_seq = vector("list", length(d_ind) + 1),
     train_method = "timeslice",   
     nlambda = 100,
     lambda_min_ratio = 0.0001,
@@ -65,7 +67,8 @@ debias_ivx <- function(
     p_focal <- length(d_ind)
 
     fit_lasso_args <- list(
-        intercept = intercept, standardize = standardize,
+        intercept = intercept, 
+        standardize = standardize,
         train_method = train_method,   
         nlambda = nlambda,
         lambda_min_ratio = lambda_min_ratio,
@@ -76,14 +79,18 @@ debias_ivx <- function(
         skip = skip
     )
 
+    # Container for chosen tuning parameters
+    lambda_hat <- rep(NA, length(d_ind) + 1)
+
     # Step 1: Lasso Regression y on w
     lasso_result  <- do.call(
         fit_lasso,
-        c(list(w = w, y = y, lambda_choice = lambda_choice[[1]]), fit_lasso_args) 
+        c(list(w = w, y = y, lambda_choice = lambda_choice[[1]], lambda_seq = lambda_seq[[1]]),  fit_lasso_args) 
     )
     b_hat_las <- lasso_result$beta
     u_hat <- as.numeric(lasso_result$u)
     theta_hat_las <- b_hat_las[d_ind]
+    lambda_hat[1] <- lasso_result$lambda
 
     # Step 2: IVX
     theta_hat_ivx <- rep(NA, p_focal)
@@ -102,10 +109,11 @@ debias_ivx <- function(
         w_z <- w[-1, -d_ind[i]]
         lasso_result <- do.call(
             fit_lasso,
-            c(list(w = w_z, y = z, lambda_choice = lambda_choice[[i + 1]]), fit_lasso_args)
+            c(list(w = w_z, y = z, lambda_choice = lambda_choice[[i + 1]], lambda_seq = lambda_seq[[i + 1]]), fit_lasso_args)
         )
         b_hat_las_z <- lasso_result$beta
         r_hat <- as.numeric(lasso_result$u)
+        lambda_hat[i + 1] <- lasso_result$lambda
 
         # Generate debiased estimates
         if (iid) {
@@ -139,6 +147,7 @@ debias_ivx <- function(
         theta_hat_ivx = theta_hat_ivx,
         t_stat_ivx= t_stat_ivx,
         sigma_hat_ivx = sigma_hat_ivx,
+        lambda_hat = lambda_hat,
         metrics = metrics
     ))
 }
@@ -169,6 +178,7 @@ fit_lasso <- function(
     intercept = FALSE,
     standardize = TRUE,
     lambda_choice = NULL,
+    lambda_seq = NULL,
     train_method = "timeslice",   
     nlambda = 100,
     lambda_min_ratio = 0.0001,
@@ -186,6 +196,7 @@ fit_lasso <- function(
             ada = FALSE,
             intercept = intercept,
             scalex = standardize,
+            lambda_seq = lambda_seq,
             train_method = train_method,
             nlambda = nlambda,
             lambda_min_ratio = lambda_min_ratio,
@@ -208,6 +219,6 @@ fit_lasso <- function(
     u_hat <- y - w %*% b_hat_las - result$a0 # result$a0 = 0 if intercept = FALSE
 
     return(
-        list(beta = b_hat_las, u = u_hat)
+        list(beta = b_hat_las, u = u_hat, lambda = lambda_lasso)
     )
 }
