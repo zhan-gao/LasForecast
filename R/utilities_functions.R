@@ -69,9 +69,13 @@ johansen = function(X){
 # https://stackoverflow.com/questions/23686067/default-lambda-sequence-in-glmnet-for-cross-validation
 # https://stackoverflow.com/questions/25257780/how-does-glmnet-compute-the-maximal-lambda-value/
 
+
+#' standard deviation of x
+#' @param x a vector
 sd_n <- function(x){
     sqrt(sum((x - mean(x))^2)/length(x))
 }
+
 
 
 #' Get the maximum lambda value for lasso

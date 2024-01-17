@@ -11,10 +11,9 @@
 #' @param standardize
 #' @param c_z Parameter in constructing IV (Phillips and Lee, 2016) \deqn{z = \sum_{j=0}^{n-1} (1 - c_z / n^a)^j \Delta d_{t-j}}
 #' @param a Parameter in constructing IV (Phillips and Lee, 2016)
-#' @param theta_0 Null hypothesis of delta; same length as d_ind
 #' @param iid boolean indicating whether we want to adjust the long-run variance
-#' @param lambda_choice Choice of lambda for Lasso regression; Of length length(d_ind) + 1;\neq NULL if user has a specific set of lambda
-#' @param lambda_seq pre-specified sequence of tuning parameter for parameter tuning; Useful in calibration of tuning parameter based on the rate conditions in the asymptotic theory
+#' @param lambda_choice Choice of lambda for Lasso regression; List of length length(d_ind) + 1: each element = NULL or = a number if user has a specific choice of tuning parameter
+#' @param lambda_seq pre-specified sequence of tuning parameter for parameter tuning; Useful in calibration of tuning parameter based on the rate conditions in the asymptotic theory; List of length length(d_ind) + 1: Each element = NULL or a vector of tuning parameters
 #' @param train_method The parameter tuning method
 #'     \itemize{
 #'      \item{"timeslice"}{https://topepo.github.io/caret/data-splitting.html#time}:
@@ -33,24 +32,25 @@
 #' @param fixed_window whether to use fixed window for "timeslice" method
 #' @param skip length of skip for "timeslice" method
 #' @return A list contains
-#' \item{delta_hat_las}{Estimate of delta from Lasso regression}
-#' \item{delta_hat_ivx}{Estimate of delta from debiased IVX}
-#' \item{t_stat}{t-statistic of delta_hat_ivx}
-#' \item{sigma_hat}{Estimate of standard error of delta_hat_ivx}
-#'
+#' \item{theta_hat_las}{Estimate of delta from Lasso regression}
+#' \item{theta_hat_ivx}{Estimate of delta from debiased IVX}
+#' \item{sigma_hat}{Estimate of standard error of theta_hat_ivx}
+#' \item{lambda_hat}{Chosen tuning parameter for Lasso regression}
+#' \item{phi_hat}{Estimate of the frequency of 0s and L1 norm of std/nonstd coefficients in the second stage}
+#' 
 #' @export
 #'
 
 
 debias_ivx <- function(
-    w, y, d_ind, 
+    w,
+    y, 
+    d_ind, 
     intercept = FALSE,
     standardize = TRUE,
     c_z = 5, 
     a = 0.9, 
-    theta_0 = rep(0, length(d_ind)), 
     iid = TRUE, 
-    sig_level = 0.05,
     lambda_choice = vector("list", length(d_ind) + 1),
     lambda_seq = vector("list", length(d_ind) + 1),
     train_method = "timeslice",   
@@ -65,6 +65,7 @@ debias_ivx <- function(
 
     n <- length(y)
     p_focal <- length(d_ind)
+    p <- ncol(w)
 
     fit_lasso_args <- list(
         intercept = intercept, 
@@ -82,7 +83,7 @@ debias_ivx <- function(
     # Container for chosen tuning parameters
     lambda_hat <- rep(NA, length(d_ind) + 1)
 
-    # Step 1: Lasso Regression y on w
+    # ---- Step 1: Lasso Regression y on w ------
     lasso_result  <- do.call(
         fit_lasso,
         c(list(w = w, y = y, lambda_choice = lambda_choice[[1]], lambda_seq = lambda_seq[[1]]),  fit_lasso_args) 
@@ -91,10 +92,14 @@ debias_ivx <- function(
     u_hat <- as.numeric(lasso_result$u)
     theta_hat_las <- b_hat_las[d_ind]
     lambda_hat[1] <- lasso_result$lambda
+    # --------------------------------------------
 
-    # Step 2: IVX
+    # ---- Step 2: IVX ----------------------------
     theta_hat_ivx <- rep(NA, p_focal)
     sigma_hat_ivx  <- rep(NA, p_focal)
+    # Container for second stage estimated coefficients
+    # Three rows: frequency of 0s, L1 norm of std/nonstd.
+    phi_hat <- matrix(NA, 3, p_focal)
 
     for (i in 1:p_focal) {
         d <- w[, d_ind[i]]
@@ -105,15 +110,23 @@ debias_ivx <- function(
         const_mat <- (1 - (c_z / n^a))^matrix(0:(n-1), n, n, byrow = TRUE)
         const_mat[upper.tri(const_mat)] <- 0
         z <- rowSums(const_mat * d_mat)[-1] #Dimension of Z is n - 1
+        # Normalize the IV
+        z <- z / sd_n(z)
 
         w_z <- w[-1, -d_ind[i]]
         lasso_result <- do.call(
             fit_lasso,
             c(list(w = w_z, y = z, lambda_choice = lambda_choice[[i + 1]], lambda_seq = lambda_seq[[i + 1]]), fit_lasso_args)
         )
-        b_hat_las_z <- lasso_result$beta
+        b_hat_las_z <- as.numeric(lasso_result$beta)
         r_hat <- as.numeric(lasso_result$u)
         lambda_hat[i + 1] <- lasso_result$lambda
+        # glmnet reports the coefficients beta_j instead of beta_j * sd_j
+        phi_hat[, i] <- c(
+            mean(b_hat_las_z == 0),
+            sum(abs(b_hat_las_z)),
+            sum(abs(b_hat_las_z * apply(w_z, 2, sd_n)))
+        )
 
         # Generate debiased estimates
         if (iid) {
@@ -130,25 +143,14 @@ debias_ivx <- function(
             (omega_uu * sum(r_hat^2)) / (sum(r_hat * d[-1])^2)
         )
     }
-
-    t_stat_ivx <- (theta_hat_ivx - theta_0) / sigma_hat_ivx
-
-    metrics <- list(
-        las_bias = theta_hat_las - theta_0,
-        las_sqerr = (theta_hat_las - theta_0)^2,
-        ivx_bias = theta_hat_ivx - theta_0,
-        ivx_sqerr = (theta_hat_ivx - theta_0)^2,
-        rej_h0 = (abs(theta_hat_ivx) / sigma_hat_ivx) > qnorm(1 - sig_level / 2),
-        coverage = (abs(theta_hat_ivx - theta_0) / sigma_hat_ivx) < qnorm(1 - sig_level / 2)
-    )
+    # --------------------------------------------
 
     return(list(
         theta_hat_las = theta_hat_las,
         theta_hat_ivx = theta_hat_ivx,
-        t_stat_ivx= t_stat_ivx,
         sigma_hat_ivx = sigma_hat_ivx,
         lambda_hat = lambda_hat,
-        metrics = metrics
+        phi_hat = phi_hat
     ))
 }
 
@@ -222,3 +224,4 @@ fit_lasso <- function(
         list(beta = b_hat_las, u = u_hat, lambda = lambda_lasso)
     )
 }
+

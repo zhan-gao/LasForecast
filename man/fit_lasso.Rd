@@ -10,6 +10,7 @@ fit_lasso(
   intercept = FALSE,
   standardize = TRUE,
   lambda_choice = NULL,
+  lambda_seq = NULL,
   train_method = "timeslice",
   nlambda = 100,
   lambda_min_ratio = 1e-04,

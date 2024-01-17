@@ -12,10 +12,9 @@ debias_ivx(
   standardize = TRUE,
   c_z = 5,
   a = 0.9,
-  theta_0 = rep(0, length(d_ind)),
   iid = TRUE,
-  sig_level = 0.05,
   lambda_choice = vector("list", length(d_ind) + 1),
+  lambda_seq = vector("list", length(d_ind) + 1),
   train_method = "timeslice",
   nlambda = 100,
   lambda_min_ratio = 1e-04,
@@ -39,11 +38,11 @@ debias_ivx(
 
 \item{a}{Parameter in constructing IV (Phillips and Lee, 2016)}
 
-\item{theta_0}{Null hypothesis of delta; same length as d_ind}
-
 \item{iid}{boolean indicating whether we want to adjust the long-run variance}
 
-\item{lambda_choice}{Choice of lambda for Lasso regression; Of length length(d_ind) + 1;\neq NULL if user has a specific set of lambda}
+\item{lambda_choice}{Choice of lambda for Lasso regression; List of length length(d_ind) + 1: each element = NULL or = a number if user has a specific choice of tuning parameter}
+
+\item{lambda_seq}{pre-specified sequence of tuning parameter for parameter tuning; Useful in calibration of tuning parameter based on the rate conditions in the asymptotic theory; List of length length(d_ind) + 1: Each element = NULL or a vector of tuning parameters}
 
 \item{train_method}{The parameter tuning method
 \itemize{
@@ -72,10 +71,11 @@ debias_ivx(
 }
 \value{
 A list contains
-\item{delta_hat_las}{Estimate of delta from Lasso regression}
-\item{delta_hat_ivx}{Estimate of delta from debiased IVX}
-\item{t_stat}{t-statistic of delta_hat_ivx}
-\item{sigma_hat}{Estimate of standard error of delta_hat_ivx}
+\item{theta_hat_las}{Estimate of delta from Lasso regression}
+\item{theta_hat_ivx}{Estimate of delta from debiased IVX}
+\item{sigma_hat}{Estimate of standard error of theta_hat_ivx}
+\item{lambda_hat}{Chosen tuning parameter for Lasso regression}
+\item{phi_hat}{Estimate of the frequency of 0s and L1 norm of std/nonstd coefficients in the second stage}
 }
 \description{
 \deqn{y_t = w_{t-1} theta + u_t} where data is already aligned to incorporate the lagged regressor
