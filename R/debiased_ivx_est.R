@@ -186,6 +186,8 @@ generate_iv  <- function(d, n, a, c_z = 5) {
 #' 
 #' @return coefficients of Lasso regression and residuals
 #' 
+#' @export
+#' 
 
 # Rewrite the function to avoid repeition of function calling.
 fit_lasso <- function(
@@ -241,6 +243,8 @@ fit_lasso <- function(
 #' IVX inference and naive OLS
 #' 
 #' @import AER sandwich
+#' 
+#' @export
 ivx_inference <- function(w, y, a = 0.75, c_z = 5) {
 
     p <- ncol(w)
@@ -266,6 +270,7 @@ ivx_inference <- function(w, y, a = 0.75, c_z = 5) {
 
 #' Post Lasso inference
 #' 
+#' @export
 #' 
 post_lasso_inference <- function(w, y, b_hat_las, d_ind, a = 0.75, c_z = 5) {
 
