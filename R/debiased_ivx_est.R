@@ -266,18 +266,37 @@ ivx_inference <- function(w, y, a = 0.75, c_z = 5) {
 post_lasso_inference <- function(w, y, b_hat_las, d_ind, a = 0.75, c_z = 5) {
 
     p <- ncol(w)
-    ind_sel <- as.logical(b_hat_las != 0)
-    ind_sel[d_ind] <- TRUE
-    w_sel <- w[, ind_sel]
+    p_focal <- length(d_ind)
 
-    ivx_res <- ivx_inference(w_sel, y, a = a, c_z = c_z)
+    
+    ind_sel_las <- as.logical(b_hat_las != 0)
+
+    theta_hat_ivx_post <- rep(NA, p_focal)
+    sigma_hat_ivx_post  <- rep(NA, p_focal)
+    theta_hat_ols_post <- rep(NA, p_focal)
+    sigma_hat_ols_post  <- rep(NA, p_focal)
+
+    for (i in 1:p_focal) {
+        ind_sel <- ind_sel_las 
+        ind_sel[d_ind[i]] <- TRUE
+        ii <- cumsum(ind_sel)[d_ind[i]]
+        w_sel <- w[, ind_sel]
+
+        ivx_res_i <- ivx_inference(w_sel, y, a = a, c_z = c_z)
+
+        theta_hat_ivx_post[i] <- ivx_res_i$iv_est[ii]
+        sigma_hat_ivx_post[i] <- ivx_res_i$iv_se[ii]
+        theta_hat_ols_post[i] <- ivx_res_i$lm_est[ii]
+        sigma_hat_ols_post[i] <- ivx_res_i$lm_se[ii]
+
+    }
     
     return(
         list(
-            theta_hat_ivx_post = ivx_res$iv_est,
-            sigma_hat_ivx_post = ivx_res$iv_se,
-            theta_hat_ols_post = ivx_res$lm_est,
-            sigma_hat_ols_post = ivx_res$lm_se
+            theta_hat_ivx_post = theta_hat_ivx_post,
+            sigma_hat_ivx_post = sigma_hat_ivx_post,
+            theta_hat_ols_post = theta_hat_ols_post,
+            sigma_hat_ols_post = theta_hat_ols_post
         )
     )
 }
