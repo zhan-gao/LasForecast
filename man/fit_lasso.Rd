@@ -15,7 +15,7 @@ fit_lasso(
   nlambda = 100,
   lambda_min_ratio = 1e-04,
   k = 10,
-  initial_window = ceiling(nrow(x) * 0.7),
+  initial_window = ceiling(nrow(w) * 0.7),
   horizon = 1,
   fixed_window = TRUE,
   skip = 0

@@ -103,13 +103,9 @@ debias_ivx <- function(
 
     for (i in 1:p_focal) {
         d <- w[, d_ind[i]]
+        
 
-        delta_d <- c(0, diff(d))
-        d_mat <- toeplitz(delta_d)
-        d_mat[upper.tri(d_mat)] <- 0
-        const_mat <- (1 - (c_z / n^a))^matrix(0:(n-1), n, n, byrow = TRUE)
-        const_mat[upper.tri(const_mat)] <- 0
-        z <- rowSums(const_mat * d_mat)[-1] #Dimension of Z is n - 1
+        z <- generate_iv(d, n, a = a, c_z = c_z)
         # Normalize the IV
         z <- z / sd_n(z)
 
@@ -155,6 +151,19 @@ debias_ivx <- function(
 }
 
 
+#' Self-generated IVs
+#' 
+generate_iv  <- function(d, n, a, c_z = 5) {
+    delta_d <- c(0, diff(d))
+    d_mat <- toeplitz(delta_d)
+    d_mat[upper.tri(d_mat)] <- 0
+    const_mat <- (1 - (c_z / n^a))^matrix(0:(n-1), n, n, byrow = TRUE)
+    const_mat[upper.tri(const_mat)] <- 0
+    z <- rowSums(const_mat * d_mat)[-1] #Dimension of Z is n - 1
+
+    return(z)
+}
+
 #' Run Lasso estimation
 #' 
 #' @param w Matrix of all regressors
@@ -185,7 +194,7 @@ fit_lasso <- function(
     nlambda = 100,
     lambda_min_ratio = 0.0001,
     k = 10,
-    initial_window = ceiling(nrow(x)*0.7),
+    initial_window = ceiling(nrow(w)*0.7),
     horizon = 1,
     fixed_window = TRUE,
     skip = 0
@@ -225,3 +234,50 @@ fit_lasso <- function(
     )
 }
 
+#' IVX inference and naive OLS
+#' 
+#' @import AER sandwich
+ivx_inference <- function(w, y, a = 0.75, c_z = 5) {
+
+    p <- ncol(w)
+    n <- length(y)
+
+    z_mat  <- apply(w, 2, generate_iv, n = n, a = a, c_z = c_z)
+
+    iv_reg <- AER::ivreg(y[-1] ~ 0 + w[-1, ] | z_mat)
+    iv_se <- sqrt(diag(vcovHC(iv_reg, type = "HC1")))
+
+    lm_reg <- lm(y ~ 0 + w)
+    lm_se <- sqrt(diag(vcovHC(lm_reg, type = "HC1")))
+    
+    return(
+        list(
+            iv_est = iv_reg$coefficients,
+            iv_se = iv_se,
+            lm_est = lm_reg$coefficients,
+            lm_se = lm_se
+        )
+    )
+}
+
+#' Post Lasso inference
+#' 
+#' 
+post_lasso_inference <- function(w, y, b_hat_las, d_ind, a = 0.75, c_z = 5) {
+
+    p <- ncol(w)
+    ind_sel <- as.logical(b_hat_las != 0)
+    ind_sel[d_ind] <- TRUE
+    w_sel <- w[, ind_sel]
+
+    ivx_res <- ivx_inference(w_sel, y, a = a, c_z = c_z)
+    
+    return(
+        list(
+            theta_hat_ivx_post = ivx_res$iv_est,
+            sigma_hat_ivx_post = ivx_res$iv_se,
+            theta_hat_ols_post = ivx_res$lm_est,
+            sigma_hat_ols_post = ivx_res$lm_se
+        )
+    )
+}
