@@ -11,6 +11,7 @@
 #' @param standardize
 #' @param c_z Parameter in constructing IV (Phillips and Lee, 2016) \deqn{z = \sum_{j=0}^{n-1} (1 - c_z / n^a)^j \Delta d_{t-j}}
 #' @param a Parameter in constructing IV (Phillips and Lee, 2016)
+#' @param standardize_iv Whether to standardize the IV
 #' @param iid boolean indicating whether we want to adjust the long-run variance
 #' @param lambda_choice Choice of lambda for Lasso regression; List of length length(d_ind) + 1: each element = NULL or = a number if user has a specific choice of tuning parameter
 #' @param lambda_seq pre-specified sequence of tuning parameter for parameter tuning; Useful in calibration of tuning parameter based on the rate conditions in the asymptotic theory; List of length length(d_ind) + 1: Each element = NULL or a vector of tuning parameters
@@ -49,7 +50,8 @@ debias_ivx <- function(
     intercept = FALSE,
     standardize = TRUE,
     c_z = 5, 
-    a = 0.9, 
+    a = 0.9,
+    standardize_iv = TRUE, 
     iid = TRUE, 
     lambda_choice = vector("list", length(d_ind) + 1),
     lambda_seq = vector("list", length(d_ind) + 1),
@@ -107,7 +109,9 @@ debias_ivx <- function(
 
         z <- generate_iv(d, n, a = a, c_z = c_z)
         # Normalize the IV
-        z <- z / sd_n(z)
+        if (standardize_iv) {
+            z <- z / sd_n(z)
+        }
 
         w_z <- w[-1, -d_ind[i]]
         lasso_result <- do.call(

@@ -12,6 +12,7 @@ debias_ivx(
   standardize = TRUE,
   c_z = 5,
   a = 0.9,
+  standardize_iv = TRUE,
   iid = TRUE,
   lambda_choice = vector("list", length(d_ind) + 1),
   lambda_seq = vector("list", length(d_ind) + 1),
@@ -37,6 +38,8 @@ debias_ivx(
 \item{c_z}{Parameter in constructing IV (Phillips and Lee, 2016) \deqn{z = \sum_{j=0}^{n-1} (1 - c_z / n^a)^j \Delta d_{t-j}}}
 
 \item{a}{Parameter in constructing IV (Phillips and Lee, 2016)}
+
+\item{standardize_iv}{Whether to standardize the IV}
 
 \item{iid}{boolean indicating whether we want to adjust the long-run variance}
 
