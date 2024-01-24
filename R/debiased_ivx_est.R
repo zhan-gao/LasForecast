@@ -13,6 +13,7 @@
 #' @param a Parameter in constructing IV (Phillips and Lee, 2016)
 #' @param standardize_iv Whether to standardize the IV
 #' @param iid boolean indicating whether we want to adjust the long-run variance
+#' @param post_inference boolean indicating whether to conduct post-lasso inference
 #' @param lambda_choice Choice of lambda for Lasso regression; List of length length(d_ind) + 1: each element = NULL or = a number if user has a specific choice of tuning parameter
 #' @param lambda_seq pre-specified sequence of tuning parameter for parameter tuning; Useful in calibration of tuning parameter based on the rate conditions in the asymptotic theory; List of length length(d_ind) + 1: Each element = NULL or a vector of tuning parameters
 #' @param train_method The parameter tuning method
@@ -53,6 +54,7 @@ debias_ivx <- function(
     a = 0.9,
     standardize_iv = TRUE, 
     iid = TRUE, 
+    post_inference = TRUE,
     lambda_choice = vector("list", length(d_ind) + 1),
     lambda_seq = vector("list", length(d_ind) + 1),
     train_method = "timeslice",   
@@ -94,6 +96,8 @@ debias_ivx <- function(
     u_hat <- as.numeric(lasso_result$u)
     theta_hat_las <- b_hat_las[d_ind]
     lambda_hat[1] <- lasso_result$lambda
+
+   
     # --------------------------------------------
 
     # ---- Step 2: IVX ----------------------------
@@ -144,14 +148,19 @@ debias_ivx <- function(
         )
     }
     # --------------------------------------------
-
-    return(list(
+    output_list <- list(
         theta_hat_las = theta_hat_las,
         theta_hat_ivx = theta_hat_ivx,
         sigma_hat_ivx = sigma_hat_ivx,
         lambda_hat = lambda_hat,
         phi_hat = phi_hat
-    ))
+    )
+    if (post_inference) {
+        post_lasso_res <- post_lasso_inference(w, y, b_hat_las, d_ind, a = a, c_z = c_z)
+        output_list <- c(output_list, post_lasso_res)
+    }
+    
+    return(output_list)
 }
 
 
@@ -167,6 +176,7 @@ generate_iv  <- function(d, n, a, c_z = 5) {
 
     return(z)
 }
+
 
 #' Run Lasso estimation
 #' 

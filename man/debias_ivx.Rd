@@ -14,6 +14,7 @@ debias_ivx(
   a = 0.9,
   standardize_iv = TRUE,
   iid = TRUE,
+  post_inference = TRUE,
   lambda_choice = vector("list", length(d_ind) + 1),
   lambda_seq = vector("list", length(d_ind) + 1),
   train_method = "timeslice",
@@ -42,6 +43,8 @@ debias_ivx(
 \item{standardize_iv}{Whether to standardize the IV}
 
 \item{iid}{boolean indicating whether we want to adjust the long-run variance}
+
+\item{post_inference}{boolean indicating whether to conduct post-lasso inference}
 
 \item{lambda_choice}{Choice of lambda for Lasso regression; List of length length(d_ind) + 1: each element = NULL or = a number if user has a specific choice of tuning parameter}
 
