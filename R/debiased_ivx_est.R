@@ -315,7 +315,7 @@ post_lasso_inference <- function(w, y, b_hat_las, d_ind, a = 0.75, c_z = 5) {
             theta_hat_ivx_post = theta_hat_ivx_post,
             sigma_hat_ivx_post = sigma_hat_ivx_post,
             theta_hat_ols_post = theta_hat_ols_post,
-            sigma_hat_ols_post = theta_hat_ols_post
+            sigma_hat_ols_post = sigma_hat_ols_post
         )
     )
 }
