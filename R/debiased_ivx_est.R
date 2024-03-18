@@ -33,6 +33,7 @@
 #' @param horizon length of horizon for "timeslice" method
 #' @param fixed_window whether to use fixed window for "timeslice" method
 #' @param skip length of skip for "timeslice" method
+#' @param zhangzhang boolean indicating whether to conduct Zhang and Zhang (2014) debiased IVX
 #' @return A list contains
 #' \item{theta_hat_las}{Estimate of delta from Lasso regression}
 #' \item{theta_hat_ivx}{Estimate of delta from debiased IVX}
@@ -64,7 +65,8 @@ debias_ivx <- function(
     initial_window = ceiling(nrow(w)*0.7),
     horizon = 1,
     fixed_window = TRUE,
-    skip = 0
+    skip = 0,
+    zhang_zhang = TRUE
 ) {
 
     n <- length(y)
@@ -103,6 +105,10 @@ debias_ivx <- function(
     # ---- Step 2: IVX ----------------------------
     theta_hat_ivx <- rep(NA, p_focal)
     sigma_hat_ivx  <- rep(NA, p_focal)
+
+    # Container for Zhang and Zhang (2014)
+    theta_hat_zz <- rep(NA, p_focal)
+    sigma_hat_zz <- rep(NA, p_focal)
     # Container for second stage estimated coefficients
     # Three rows: frequency of 0s, L1 norm of std/nonstd.
     phi_hat <- matrix(NA, 3, p_focal)
@@ -124,7 +130,8 @@ debias_ivx <- function(
         )
         b_hat_las_z <- as.numeric(lasso_result$beta)
         r_hat <- as.numeric(lasso_result$u)
-        lambda_hat[i + 1] <- lasso_result$lambda
+        lambda_hat[i + 1] <- as.numeric(lasso_result$lambda)
+
         # glmnet reports the coefficients beta_j instead of beta_j * sd_j
         phi_hat[, i] <- c(
             mean(b_hat_las_z == 0),
@@ -146,6 +153,19 @@ debias_ivx <- function(
         sigma_hat_ivx[i] <- sqrt(
             (omega_uu * sum(r_hat^2)) / (sum(r_hat * d[-1])^2)
         )
+
+        # s.e. and t statistics for Zhang and Zhang (2014)
+        if (zhang_zhang) {
+            lasso_result_zz <- do.call(
+                fit_lasso,
+                c(list(w = w_z, y = d[-1], lambda_choice = lambda_choice[[i + 1]], lambda_seq = lambda_seq[[i + 1]]), fit_lasso_args)
+            )
+            r_hat_zz <- as.numeric(lasso_result_zz$u)
+            theta_hat_zz[i] <- theta_hat_las[i] + (sum(r_hat_zz * u_hat[-1]) ) / sum(r_hat_zz * d[-1])
+            sigma_hat_zz[i] <- sqrt(
+                (omega_uu * sum(r_hat_zz^2)) / (sum(r_hat_zz * d[-1])^2)
+            )
+        }
     }
     # --------------------------------------------
     output_list <- list(
@@ -155,6 +175,9 @@ debias_ivx <- function(
         lambda_hat = lambda_hat,
         phi_hat = phi_hat
     )
+    if (zhang_zhang) {
+        output_list <- c(output_list, list(theta_hat_zz = theta_hat_zz, sigma_hat_zz = sigma_hat_zz))
+    }
     if (post_inference) {
         post_lasso_res <- post_lasso_inference(w, y, b_hat_las, d_ind, a = a, c_z = c_z)
         output_list <- c(output_list, post_lasso_res)
@@ -319,3 +342,4 @@ post_lasso_inference <- function(w, y, b_hat_las, d_ind, a = 0.75, c_z = 5) {
         )
     )
 }
+

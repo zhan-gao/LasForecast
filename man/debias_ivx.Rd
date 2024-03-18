@@ -24,7 +24,8 @@ debias_ivx(
   initial_window = ceiling(nrow(w) * 0.7),
   horizon = 1,
   fixed_window = TRUE,
-  skip = 0
+  skip = 0,
+  zhang_zhang = TRUE
 )
 }
 \arguments{
@@ -74,6 +75,8 @@ debias_ivx(
 \item{fixed_window}{whether to use fixed window for "timeslice" method}
 
 \item{skip}{length of skip for "timeslice" method}
+
+\item{zhangzhang}{boolean indicating whether to conduct Zhang and Zhang (2014) debiased IVX}
 }
 \value{
 A list contains
