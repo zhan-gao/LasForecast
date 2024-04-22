@@ -173,7 +173,8 @@ debias_ivx <- function(
         theta_hat_ivx = theta_hat_ivx,
         sigma_hat_ivx = sigma_hat_ivx,
         lambda_hat = lambda_hat,
-        phi_hat = phi_hat
+        phi_hat = phi_hat,
+        b_hat_las = b_hat_las
     )
     if (zhang_zhang) {
         output_list <- c(output_list, list(theta_hat_zz = theta_hat_zz, sigma_hat_zz = sigma_hat_zz))
@@ -281,6 +282,7 @@ fit_lasso <- function(
 ivx_inference <- function(w, y, a = 0.75, c_z = 5) {
 
     p <- ncol(w)
+
     n <- length(y)
 
     z_mat  <- apply(w, 2, generate_iv, n = n, a = a, c_z = c_z)
@@ -322,7 +324,7 @@ post_lasso_inference <- function(w, y, b_hat_las, d_ind, a = 0.75, c_z = 5) {
         ind_sel <- ind_sel_las 
         ind_sel[d_ind[i]] <- TRUE
         ii <- cumsum(ind_sel)[d_ind[i]]
-        w_sel <- w[, ind_sel]
+        w_sel <- w[, ind_sel, drop = FALSE]
 
         ivx_res_i <- ivx_inference(w_sel, y, a = a, c_z = c_z)
 
