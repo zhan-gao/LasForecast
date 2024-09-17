@@ -1,14 +1,16 @@
-
-
 # ---- Generate lambda Sequence as in glmnet ----
 # Details refer to Friedman, Hastie and Tibshirani (2010, Sec. 2.5.) Journal of Statistical Software
 # and the online posts:
 # https://stackoverflow.com/questions/23686067/default-lambda-sequence-in-glmnet-for-cross-validation
 # https://stackoverflow.com/questions/25257780/how-does-glmnet-compute-the-maximal-lambda-value/
 
+
+#' standard deviation of x
+#' @param x a vector
 sd_n <- function(x){
     sqrt(sum((x - mean(x))^2)/length(x))
 }
+
 
 
 #' Get the maximum lambda value for lasso
@@ -22,6 +24,9 @@ sd_n <- function(x){
 #' @return lambda_max
 #' 
 #' @export
+#' 
+#' 
+
 get_lasso_lambda_max <- function(x, y, scalex = FALSE, nlambda = 100, lambda_min_ratio = 0.0001){
 
     n <- nrow(x)
@@ -52,6 +57,7 @@ get_lasso_lambda_max <- function(x, y, scalex = FALSE, nlambda = 100, lambda_min
 #' 
 #' @export
 #' 
+
 get_lambda_seq <- function(lambda_max, lambda_min_ratio = 0.0001, nlambda = 100){
 
     lambda_min <- lambda_min_ratio * lambda_max
@@ -60,15 +66,12 @@ get_lambda_seq <- function(lambda_max, lambda_min_ratio = 0.0001, nlambda = 100)
     return(lambda_seq)
 }
 
-
-
-
 # An auxiliary function for coordinate descent algorithm
 pos <- function(x){
     if(x > 0) x
     else 0
 }
-
+# ---- end of lambda sequence ----
 
 # --------- multi assign functions ----------
 # borrow from https://stackoverflow.com/questions/7519790/assign-multiple-new-variables-on-lhs-in-a-single-line-in-r
@@ -115,3 +118,4 @@ g = function(...) {
     class(List) = 'lbunch'
     return(List)
 }
+# ---- end of multi assign functions ----

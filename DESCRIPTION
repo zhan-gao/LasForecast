@@ -13,13 +13,20 @@ License: MIT
 Encoding: UTF-8
 LazyData: true
 Imports: 
+    ggplot2,
     caret,
     Matrix,
     lubridate,
     zoo,
     reshape2,
     CVXR,
-    SparseM
+    SparseM,
+    tseries,
+    urca,
+    sandwich,
+    mvtnorm,
+    abind,
+    dplyr
 Suggests:
     Rmosek,
     doParallel,
@@ -28,6 +35,7 @@ Suggests:
     dplyr,
     knitr,
     rmarkdown,
-    gurobi
-RoxygenNote: 7.2.3
+    gurobi,
+    robustsubsets
+RoxygenNote: 7.3.1
 VignetteBuilder: knitr

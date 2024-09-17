@@ -12,20 +12,21 @@
 #' @param verb boolean to control whether print information on screen
 #' @param ar_order 0 or 1 to control whether include ar1 lag or not
 #'
+#' @import glmnet robustsubsets
 #' @export
 #'
 roll_predict <- function(x, y, roll_window, h = 1, methods_use = c("RW",
-                                                                   "RWwD",
-                                                                   "OLS",
-                                                                   "Lasso",
-                                                                   "Lasso_Std",
-                                                                   "ALasso",
-                                                                   "TALasso",
-                                                                   "post_Lasso",
-                                                                   "post_Lasso_Std",
-                                                                   "post_ALasso",
-                                                                   "post_TALasso",
-                                                                   "bss"),
+                                                                  "RWwD",
+                                                                  "OLS",
+                                                                  "Lasso",
+                                                                  "Lasso_Std",
+                                                                  "ALasso",
+                                                                  "TALasso",
+                                                                  "bss",
+                                                                  "rss",
+                                                                  "rlasso",
+                                                                  "lad",
+                                                                  "lad_lasso"),
                          train_method_las = "cv", verb = TRUE, ar_order = 0){
 
     x <- as.matrix(x)
@@ -78,6 +79,14 @@ roll_predict <- function(x, y, roll_window, h = 1, methods_use = c("RW",
                 df = rep(0, num_forecast)
             )
         }
+    }
+
+    # Additional containers for rss and rlasso
+    if("rss" %in% methods_use){
+        save_result$rss$weights <- rep(0, num_forecast)
+    }
+    if("rlasso" %in% methods_use){
+        save_result$rlasso$d <- rep(0, num_forecast)
     }
 
     # Prediction starts from t0
@@ -299,6 +308,50 @@ roll_predict <- function(x, y, roll_window, h = 1, methods_use = c("RW",
             save_result$bss$tuning_param[tt] <- result_bss$k
             save_result$bss$df[tt] <- sum(coef_bss[-1] != 0)
 
+        }
+
+        # ---------------- RSS ----------------
+
+        if("rss" %in% methods_use) {
+            rss_fit <- robustsubsets::rss(
+                x_est, y_est, ic_select = TRUE
+            )
+            coef_rss <- rss_fit$beta
+
+            save_result$rss$y_hat[tt] <- sum(c(1, x_for) * coef_rss)
+            save_result$rss$beta_hat[tt, ] <- coef_rss[-1]
+            save_result$rss$weights[tt] <- rss_fit$weights
+        }
+
+        # ---------------- Rlasso ----------------
+
+        if("rlasso" %in% methods_use) {
+            rlasso_fit <- robustsubsets::rlasso(x_est, y_est, var_sel_lasso_lambda = 0, ic_select = TRUE)
+            coef_rlasso <- rlasso_fit$b
+
+            save_result$rlasso$y_hat[tt] <- sum(c(1, x_for) * coef_rlasso)
+            save_result$rlasso$beta_hat[tt, ] <- coef_rlasso[-1]
+            save_result$rlasso$d[tt] <- rlasso_fit$d
+        }
+
+        # ---------------- LAD ----------------
+
+        if("lad" %in% methods_use) {
+            lad_fit <- robustsubsets::lad_reg(x_est, y_est, intercept = TRUE)
+            coef_lad <- as.numeric(lad_fit)
+
+            save_result$lad$y_hat[tt] <- sum(c(1, x_for) * coef_lad)
+            save_result$lad$beta_hat[tt, ] <- coef_lad[-1]
+        }
+
+        # ---------------- LAD + Variable Selection ----------------
+
+        if("lad_lasso" %in% methods_use) {
+            lad_lasso_fit <- robustsubsets::lad_reg(x_est, y_est, intercept = TRUE, lambda = NULL)
+            coef_lad_lasso <- as.numeric(lad_lasso_fit)
+
+            save_result$lad_lasso$y_hat[tt] <- sum(c(1, x_for) * coef_lad_lasso)
+            save_result$lad_lasso$beta_hat[tt, ] <- coef_lad_lasso[-1]
         }
 
         t_use <- Sys.time() - t_start

@@ -2,5 +2,18 @@
 % Please edit documentation in R/LasForecast.R
 \docType{package}
 \name{LasForecast}
+\alias{LasForecast-package}
 \alias{LasForecast}
 \title{LasForecast: Time series linear predictive regression}
+\description{
+This package develops a framework for economic forecasting in a data-rich environment with a particular emphasis on linear predictive regression. The goal is to automate the processes of parameter tuning, rolling window forecasting and backtesting, and visualization in a unified framework.
+}
+\author{
+\strong{Maintainer}: Zhan Gao \email{zhangao@usc.edu}
+
+Authors:
+\itemize{
+  \item Zhentao Shi \email{zhentaoshi@cuhk.edu.hk}
+}
+
+}
