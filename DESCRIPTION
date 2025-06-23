@@ -35,7 +35,6 @@ Suggests:
     dplyr,
     knitr,
     rmarkdown,
-    gurobi,
-    robustsubsets
-RoxygenNote: 7.3.1
+    gurobi
+RoxygenNote: 7.3.2
 VignetteBuilder: knitr

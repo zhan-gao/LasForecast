@@ -174,7 +174,8 @@ debias_ivx <- function(
         sigma_hat_ivx = sigma_hat_ivx,
         lambda_hat = lambda_hat,
         phi_hat = phi_hat,
-        b_hat_las = b_hat_las
+        b_hat_las = b_hat_las,
+        u_hat = u_hat
     )
     if (zhang_zhang) {
         output_list <- c(output_list, list(theta_hat_zz = theta_hat_zz, sigma_hat_zz = sigma_hat_zz))

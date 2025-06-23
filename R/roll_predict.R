@@ -12,7 +12,7 @@
 #' @param verb boolean to control whether print information on screen
 #' @param ar_order 0 or 1 to control whether include ar1 lag or not
 #'
-#' @import glmnet robustsubsets
+#' @import glmnet
 #' @export
 #'
 roll_predict <- function(x, y, roll_window, h = 1, methods_use = c("RW",
