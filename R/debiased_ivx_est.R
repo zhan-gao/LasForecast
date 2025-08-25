@@ -1,7 +1,7 @@
 # Main function for debiased IVX estimator
 
-#' Debiased IVX for predictive regression 
-#' 
+#' Debiased IVX for predictive regression
+#'
 #' \deqn{y_t = w_{t-1} theta + u_t} where data is already aligned to incorporate the lagged regressor
 #'
 #' @param w Matrix of all regressors
@@ -21,7 +21,7 @@
 #'      \item{"timeslice"}{https://topepo.github.io/caret/data-splitting.html#time}:
 #'          By combining initial window, horizon, fixed window and skip, we can control the sample splitting.
 #'          Roll_block: Setting initial_window = horizon = floor(nrow(x) / k), fixed_window = False, and skip = floor(nrow(x) / k) - 1
-#'          Period-by-period rolling: skip = 0. 
+#'          Period-by-period rolling: skip = 0.
 #'      \item "cv": Cross-validation based on block splits.
 #'      \item "cv_random": Cross-validition based on random splits.
 #'      \item "aic", "bic", "aicc", "hqc": based on information criterion.
@@ -40,25 +40,25 @@
 #' \item{sigma_hat}{Estimate of standard error of theta_hat_ivx}
 #' \item{lambda_hat}{Chosen tuning parameter for Lasso regression}
 #' \item{phi_hat}{Estimate of the frequency of 0s and L1 norm of std/nonstd coefficients in the second stage}
-#' 
+#'
 #' @export
 #'
 
 
 debias_ivx <- function(
     w,
-    y, 
-    d_ind, 
+    y,
+    d_ind,
     intercept = FALSE,
     standardize = TRUE,
-    c_z = 5, 
+    c_z = 5,
     a = 0.9,
-    standardize_iv = TRUE, 
-    iid = TRUE, 
+    standardize_iv = TRUE,
+    iid = TRUE,
     post_inference = TRUE,
     lambda_choice = vector("list", length(d_ind) + 1),
     lambda_seq = vector("list", length(d_ind) + 1),
-    train_method = "timeslice",   
+    train_method = "timeslice",
     nlambda = 100,
     lambda_min_ratio = 0.0001,
     k = 10,
@@ -77,11 +77,11 @@ debias_ivx <- function(
     p <- ncol(w)
 
     fit_lasso_args <- list(
-        intercept = intercept, 
+        intercept = intercept,
         standardize = standardize,
-        train_method = train_method,   
+        train_method = train_method,
         nlambda = nlambda,
-        
+
         lambda_min_ratio = lambda_min_ratio,
         k = k,
         initial_window = initial_window,
@@ -96,14 +96,14 @@ debias_ivx <- function(
     # ---- Step 1: Lasso Regression y on w ------
     lasso_result  <- do.call(
         fit_lasso,
-        c(list(w = w, y = y, lambda_choice = lambda_choice[[1]], lambda_seq = lambda_seq[[1]]),  fit_lasso_args) 
+        c(list(w = w, y = y, lambda_choice = lambda_choice[[1]], lambda_seq = lambda_seq[[1]]),  fit_lasso_args)
     )
     b_hat_las <- lasso_result$beta
     u_hat <- as.numeric(lasso_result$u)
     theta_hat_las <- b_hat_las[d_ind]
     lambda_hat[1] <- lasso_result$lambda
 
-   
+
     # --------------------------------------------
 
     # ---- Step 2: IVX ----------------------------
@@ -119,7 +119,7 @@ debias_ivx <- function(
 
     for (i in 1:p_focal) {
         d <- w[, d_ind[i]]
-        
+
 
         z <- generate_iv(d, n, a = a, c_z = c_z)
         # Normalize the IV
@@ -192,6 +192,7 @@ debias_ivx <- function(
                 sigma_hat_ivx[i] <- sqrt(
                     (n * Gamma.hat) / (sum(r_hat * d[-1])^2)
                 )
+            }
         }
 
         # s.e. and t statistics for Zhang and Zhang (2014)
@@ -224,13 +225,13 @@ debias_ivx <- function(
         post_lasso_res <- post_lasso_inference(w, y, b_hat_las, d_ind, a = a, c_z = c_z)
         output_list <- c(output_list, post_lasso_res)
     }
-    
+
     return(output_list)
 }
 
 
 #' Self-generated IVs
-#' 
+#'
 generate_iv  <- function(d, n, a, c_z = 5) {
     delta_d <- c(0, diff(d))
     d_mat <- toeplitz(delta_d)
@@ -244,7 +245,7 @@ generate_iv  <- function(d, n, a, c_z = 5) {
 
 
 #' Run Lasso estimation
-#' 
+#'
 #' @param w Matrix of all regressors
 #' @param y Vector of dependent variable
 #' @param intercept
@@ -258,20 +259,20 @@ generate_iv  <- function(d, n, a, c_z = 5) {
 #' @inheritParams debias_ivx$horizon
 #' @inheritParams debias_ivx$fixed_window
 #' @inheritParams debias_ivx$skip
-#' 
+#'
 #' @return coefficients of Lasso regression and residuals
-#' 
+#'
 #' @export
-#' 
+#'
 
 # Rewrite the function to avoid repeition of function calling.
 fit_lasso <- function(
-    w, y, 
+    w, y,
     intercept = FALSE,
     standardize = TRUE,
     lambda_choice = NULL,
     lambda_seq = NULL,
-    train_method = "timeslice",   
+    train_method = "timeslice",
     nlambda = 100,
     lambda_min_ratio = 0.0001,
     k = 10,
@@ -316,9 +317,9 @@ fit_lasso <- function(
 }
 
 #' IVX inference and naive OLS
-#' 
+#'
 #' @import AER sandwich
-#' 
+#'
 #' @export
 ivx_inference <- function(w, y, a = 0.75, c_z = 5) {
 
@@ -333,7 +334,7 @@ ivx_inference <- function(w, y, a = 0.75, c_z = 5) {
 
     lm_reg <- lm(y ~ 0 + w)
     lm_se <- sqrt(diag(vcovHC(lm_reg, type = "HC1")))
-    
+
     return(
         list(
             iv_est = iv_reg$coefficients,
@@ -345,15 +346,15 @@ ivx_inference <- function(w, y, a = 0.75, c_z = 5) {
 }
 
 #' Post Lasso inference
-#' 
+#'
 #' @export
-#' 
+#'
 post_lasso_inference <- function(w, y, b_hat_las, d_ind, a = 0.75, c_z = 5) {
 
     p <- ncol(w)
     p_focal <- length(d_ind)
 
-    
+
     ind_sel_las <- as.logical(b_hat_las != 0)
 
     theta_hat_ivx_post <- rep(NA, p_focal)
@@ -362,7 +363,7 @@ post_lasso_inference <- function(w, y, b_hat_las, d_ind, a = 0.75, c_z = 5) {
     sigma_hat_ols_post  <- rep(NA, p_focal)
 
     for (i in 1:p_focal) {
-        ind_sel <- ind_sel_las 
+        ind_sel <- ind_sel_las
         ind_sel[d_ind[i]] <- TRUE
         ii <- cumsum(ind_sel)[d_ind[i]]
         w_sel <- w[, ind_sel, drop = FALSE]
@@ -375,7 +376,7 @@ post_lasso_inference <- function(w, y, b_hat_las, d_ind, a = 0.75, c_z = 5) {
         sigma_hat_ols_post[i] <- ivx_res_i$lm_se[ii]
 
     }
-    
+
     return(
         list(
             theta_hat_ivx_post = theta_hat_ivx_post,
