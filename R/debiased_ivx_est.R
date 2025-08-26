@@ -54,7 +54,6 @@ debias_ivx <- function(
     c_z = 5,
     a = 0.9,
     standardize_iv = TRUE,
-    iid = TRUE,
     post_inference = TRUE,
     lambda_choice = vector("list", length(d_ind) + 1),
     lambda_seq = vector("list", length(d_ind) + 1),
@@ -143,56 +142,35 @@ debias_ivx <- function(
             sum(abs(b_hat_las_z * apply(w_z, 2, sd_n)))
         )
 
-        # Generate debiased estimates
-        if (iid) {
-            theta_hat_ivx[i] <- theta_hat_las[i] + (sum(r_hat * u_hat[-1]) ) / sum(r_hat * d[-1])
-        } else {
-            lrcov_du <- lrcov_est(u_hat[-1], diff(d), type = 1) # one-sided long-run covariance
-            theta_hat_ivx[i] <- theta_hat_las[i] + (sum(r_hat * u_hat[-1]) - (n * lrcov_du)) / sum(r_hat * d[-1])
-        }
+        # # Generate debiased estimates
+        # if (iid) {
+        #     theta_hat_ivx[i] <- theta_hat_las[i] + (sum(r_hat * u_hat[-1]) ) / sum(r_hat * d[-1])
+        # } else {
+        #     lrcov_du <- lrcov_est(u_hat[-1], diff(d), type = 1) # one-sided long-run covariance
+        #     theta_hat_ivx[i] <- theta_hat_las[i] + (sum(r_hat * u_hat[-1]) - (n * lrcov_du)) / sum(r_hat * d[-1])
+        # }
 
         # s.e. and t statistics
         # omega_uu <- lrcov_est(u_hat, type = 0) # long-run covariance
 
         if (se_type == "iid") {
+            theta_hat_ivx[i] <- theta_hat_las[i] + (sum(r_hat * u_hat[-1]) ) / sum(r_hat * d[-1])
             omega_uu  <- mean(u_hat^2)
             sigma_hat_ivx[i] <- sqrt(
                 (omega_uu * sum(r_hat^2)) / (sum(r_hat * d[-1])^2)
             )
         } else if (se_type == "robust") {
+            theta_hat_ivx[i] <- theta_hat_las[i] + (sum(r_hat * u_hat[-1]) ) / sum(r_hat * d[-1])
             sigma_hat_ivx[i] <- sqrt(
                 sum((r_hat * u_hat)^2) / (sum(r_hat * d[-1])^2)
             )
         } else {
-            psi <- r_hat * u_hat
-            n   <- length(psi)
-            if (is.null(hac.lag)) hac.lag <- floor(1.2 * n^(1/3))  # auto bandwidth
-
-            if (hac.lag <= 0) {
-                # Falls back to robust when user sets L=0
-                se <- sqrt(sum(psi^2)) / abs(den)
-            } else {
-                # kernel weights
-                if (kernel == "Bartlett") {
-                kappa <- 1 - (1:hac.lag)/(hac.lag + 1)
-                } else {  # Parzen
-                q <- 1:hac.lag; u <- q/(hac.lag + 1)
-                kappa <- numeric(hac.lag)
-                idx1 <- u <= 0.5; idx2 <- !idx1
-                kappa[idx1] <- 1 - 6*u[idx1]^2 + 6*u[idx1]^3
-                kappa[idx2] <- 2*(1 - u[idx2])^3
-                kappa[kappa < 0] <- 0
-                }
-
-                gamma0 <- mean(psi^2)
-                gammah <- sapply(1:hac.lag, function(h) mean(psi[(h+1):n] * psi[1:(n-h)]))
-                Gamma.hat <- gamma0 + 2 * sum(kappa * gammah)
-                Gamma.hat <- max(Gamma.hat, 0)  # numerical guard
-
-                sigma_hat_ivx[i] <- sqrt(
-                    (n * Gamma.hat) / (sum(r_hat * d[-1])^2)
-                )
-            }
+            lrcov_du <- lrcov_est(u_hat[-1], diff(d), type = 1) # one-sided long-run covariance
+            theta_hat_ivx[i] <- theta_hat_las[i] + (sum(r_hat * u_hat[-1]) - (n * lrcov_du)) / sum(r_hat * d[-1])
+            omega_uu <- lrcov_est(u_hat, type = 0) # long-run covariance
+            sigma_hat_ivx[i] <- sqrt(
+                (omega_uu * sum(r_hat^2)) / (sum(r_hat * d[-1])^2)
+            )
         }
 
         # s.e. and t statistics for Zhang and Zhang (2014)
