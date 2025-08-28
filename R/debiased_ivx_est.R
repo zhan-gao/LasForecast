@@ -162,7 +162,7 @@ debias_ivx <- function(
         } else if (se_type == "robust") {
             theta_hat_ivx[i] <- theta_hat_las[i] + (sum(r_hat * u_hat[-1]) ) / sum(r_hat * d[-1])
             sigma_hat_ivx[i] <- sqrt(
-                sum((r_hat * u_hat)^2) / (sum(r_hat * d[-1])^2)
+                sum((r_hat * u_hat[-1])^2) / (sum(r_hat * d[-1])^2)
             )
         } else {
             lrcov_du <- lrcov_est(u_hat[-1], diff(d), type = 1) # one-sided long-run covariance
@@ -181,9 +181,21 @@ debias_ivx <- function(
             )
             r_hat_zz <- as.numeric(lasso_result_zz$u)
             theta_hat_zz[i] <- theta_hat_las[i] + (sum(r_hat_zz * u_hat[-1]) ) / sum(r_hat_zz * d[-1])
-            sigma_hat_zz[i] <- sqrt(
-                (omega_uu * sum(r_hat_zz^2)) / (sum(r_hat_zz * d[-1])^2)
-            )
+            if (se_type == "iid") {
+                sigma_hat_zz[i] <- sqrt(
+                    (omega_uu * sum(r_hat_zz^2)) / (sum(r_hat_zz * d[-1])^2)
+                )
+            } else if (se_type == "robust") {
+                sigma_hat_zz[i] <- sqrt(
+                    sum((r_hat_zz * u_hat[-1])^2) / (sum(r_hat_zz * d[-1])^2)
+                )
+            } else {
+                lrcov_du_zz <- lrcov_est(u_hat[-1], diff(d), type = 1) # one-sided long-run covariance
+                omega_uu_zz <- lrcov_est(u_hat, type = 0) # long-run covariance
+                sigma_hat_zz[i] <- sqrt(
+                    (omega_uu_zz * sum(r_hat_zz^2)) / (sum(r_hat_zz * d[-1])^2)
+                )
+            }
         }
     }
     # --------------------------------------------
