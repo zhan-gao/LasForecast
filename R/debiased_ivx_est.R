@@ -102,6 +102,10 @@ debias_ivx <- function(
     theta_hat_las <- b_hat_las[d_ind]
     lambda_hat[1] <- lasso_result$lambda
 
+    # Make this function also a wrapper for Lasso regression
+    if (is.null(d_ind)) {
+        return(lasso_result)
+    }
 
     # --------------------------------------------
 
