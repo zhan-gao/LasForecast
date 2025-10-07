@@ -73,7 +73,9 @@ debias_ivx <- function(
     skip = 0,
     zhang_zhang = TRUE,
     se_type = "iid",
-    joint_test = FALSE
+    joint_test = FALSE,
+    R_mat = diag(length(d_ind)),
+    q_vec = rep(0, length(d_ind))
 ) {
 
     n <- length(y)
@@ -227,8 +229,8 @@ debias_ivx <- function(
         wald_stat <- t(test_vec) %*% solve(cov_matrix) %*% test_vec
         p_value_wald <- pchisq(wald_stat, df = p_focal, lower.tail = FALSE)
     } else {
-        wald_stat <- NULL
-        p_value_wald <- NULL
+        wald_stat <- NA
+        p_value_wald <- NA
     }
 
     # --------------------------------------------
