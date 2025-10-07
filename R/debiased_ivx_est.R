@@ -212,7 +212,7 @@ debias_ivx <- function(
         }
     }
 
-    if (joint_test = TRUE) {
+    if (joint_test == TRUE) {
         cov_matrix <- matrix(NA, p_focal, p_focal)
         for (i in 1:p_focal) {
             for (j in 1:p_focal) {
