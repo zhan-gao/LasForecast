@@ -73,7 +73,7 @@ debias_ivx <- function(
     skip = 0,
     zhang_zhang = TRUE,
     se_type = "iid",
-    d_joint = NULL
+    joint_test = FALSE
 ) {
 
     n <- length(y)
