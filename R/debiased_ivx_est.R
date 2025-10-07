@@ -225,8 +225,8 @@ debias_ivx <- function(
                 )
             }
         }
-        test_vec <- R_mat %*% as.matrix(theta_hat_las, ncol = 1) - q_vec
-        wald_stat <- t(test_vec) %*% solve(cov_matrix) %*% test_vec
+        test_vec <- R_mat %*% as.matrix(theta_hat_ivx, ncol = 1) - q_vec
+        wald_stat <- as.numeric(t(test_vec) %*% solve(cov_matrix) %*% test_vec)
         p_value_wald <- pchisq(wald_stat, df = p_focal, lower.tail = FALSE)
     } else {
         wald_stat <- NA
