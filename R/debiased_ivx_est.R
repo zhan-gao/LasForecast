@@ -34,6 +34,12 @@
 #' @param fixed_window whether to use fixed window for "timeslice" method
 #' @param skip length of skip for "timeslice" method
 #' @param zhangzhang boolean indicating whether to conduct Zhang and Zhang (2014) debiased IVX
+#' @param se_type type of standard error estimation
+#'     \itemize{
+#'      \item "iid": iid standard error
+#'      \item "robust": robust standard error
+#'      \item "HAC": HAC standard error
+#'      }
 #' @return A list contains
 #' \item{theta_hat_las}{Estimate of delta from Lasso regression}
 #' \item{theta_hat_ivx}{Estimate of delta from debiased IVX}
@@ -66,9 +72,8 @@ debias_ivx <- function(
     fixed_window = TRUE,
     skip = 0,
     zhang_zhang = TRUE,
-    se_type = c("iid","robust","HAC"),
-    hac_lag = NULL,
-    kernel  = c("Bartlett","Parzen")
+    se_type = "iid",
+    d_joint = NULL
 ) {
 
     n <- length(y)
@@ -120,6 +125,9 @@ debias_ivx <- function(
     # Three rows: frequency of 0s, L1 norm of std/nonstd.
     phi_hat <- matrix(NA, 3, p_focal)
 
+    w_joint <- w[-1, d_ind]
+    r_joint  <- matrix(NA, nrow(w_joint), p_focal)
+
     for (i in 1:p_focal) {
         d <- w[, d_ind[i]]
 
@@ -137,6 +145,7 @@ debias_ivx <- function(
         )
         b_hat_las_z <- as.numeric(lasso_result$beta)
         r_hat <- as.numeric(lasso_result$u)
+        r_joint[, i] <- r_hat
         lambda_hat[i + 1] <- as.numeric(lasso_result$lambda)
 
         # glmnet reports the coefficients beta_j instead of beta_j * sd_j
@@ -202,6 +211,26 @@ debias_ivx <- function(
             }
         }
     }
+
+    if (joint_test = TRUE) {
+        cov_matrix <- matrix(NA, p_focal, p_focal)
+        for (i in 1:p_focal) {
+            for (j in 1:p_focal) {
+                cov_matrix[i, j] <- (
+                    sum(r_joint[, i] * r_joint[, j] * (u_hat[-1]^2))
+                ) / (
+                    sum(r_joint[, i] * w_joint[, i]) * sum(r_joint[, j] * w_joint[, j])
+                )
+            }
+        }
+        test_vec <- R_mat %*% as.matrix(theta_hat_las, ncol = 1) - q_vec
+        wald_stat <- t(test_vec) %*% solve(cov_matrix) %*% test_vec
+        p_value_wald <- pchisq(wald_stat, df = p_focal, lower.tail = FALSE)
+    } else {
+        wald_stat <- NULL
+        p_value_wald <- NULL
+    }
+
     # --------------------------------------------
     output_list <- list(
         theta_hat_las = theta_hat_las,
@@ -210,7 +239,9 @@ debias_ivx <- function(
         lambda_hat = lambda_hat,
         phi_hat = phi_hat,
         b_hat_las = b_hat_las,
-        u_hat = u_hat
+        u_hat = u_hat,
+        wald_stat = wald_stat,
+        p_value_wald = p_value_wald
     )
     if (zhang_zhang) {
         output_list <- c(output_list, list(theta_hat_zz = theta_hat_zz, sigma_hat_zz = sigma_hat_zz))
